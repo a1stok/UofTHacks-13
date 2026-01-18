@@ -9,6 +9,7 @@ import {
   Brain,
   Eye
 } from 'lucide-react'
+import { useAmplitudeMetrics, useAmplitudeEvents } from '@/hooks/useAmplitudeData'
 
 interface ABTestingViewProps {
   subView?: string
@@ -21,6 +22,10 @@ export function ABTestingView({ subView }: ABTestingViewProps) {
   const [isSynced, setIsSynced] = useState(false)
   const [progressA, setProgressA] = useState(0)
   const [progressB, setProgressB] = useState(0)
+  
+  // Fetch real Amplitude data
+  const { data: metrics, isLoading: metricsLoading } = useAmplitudeMetrics()
+  const { data: events, isLoading: eventsLoading } = useAmplitudeEvents()
   
   // Sync with sidebar sub-navigation
   useEffect(() => {
@@ -62,7 +67,7 @@ export function ABTestingView({ subView }: ABTestingViewProps) {
         </div>
         <div className="text-right">
           <span className="text-xs text-muted-foreground">
-            A/B/C Testing • Plus Plan from $49/mo
+            A/B/C Testing • {metricsLoading ? 'Loading...' : `${events?.length || 0} events tracked`}
           </span>
         </div>
       </div>
