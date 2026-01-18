@@ -44,7 +44,7 @@
   --color-sidebar-ring: var(--sidebar-ring);
   --color-selection: var(--selection-bg);
   --color-selection-foreground: var(--selection-color);
-  
+
   --color-warning: var(--warning);
   --color-success: var(--success);
   --color-mypage: var(--mypage)
@@ -147,7 +147,6 @@
     @apply bg-background text-foreground;
   }
 }
-
 
 .shaded {
   background-image: var(--shaded-bg);
