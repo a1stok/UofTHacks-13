@@ -7,9 +7,15 @@ import {
   Play,
   Pause,
   Brain,
-  Eye
+  Eye,
+  RefreshCw,
+  Clock,
+  Video
 } from 'lucide-react'
 import { useAmplitudeMetrics, useAmplitudeEvents } from '@/hooks/useAmplitudeData'
+import { useRecordingsList, useRecording } from '@/hooks/useRecordings'
+import { formatDuration, formatTimestamp, RecordingMetadata } from '@/lib/recordings'
+import { SessionPlayer } from '@/components/SessionPlayer'
 
 interface ABTestingViewProps {
   subView?: string
@@ -22,10 +28,31 @@ export function ABTestingView({ subView }: ABTestingViewProps) {
   const [isSynced, setIsSynced] = useState(false)
   const [progressA, setProgressA] = useState(0)
   const [progressB, setProgressB] = useState(0)
+  const [selectedRecordingA, setSelectedRecordingA] = useState<string | null>(null)
+  const [selectedRecordingB, setSelectedRecordingB] = useState<string | null>(null)
   
   // Fetch real Amplitude data
-  const { data: metrics, isLoading: metricsLoading } = useAmplitudeMetrics()
-  const { data: events, isLoading: eventsLoading } = useAmplitudeEvents()
+  const { data: _metrics, isLoading: metricsLoading } = useAmplitudeMetrics()
+  const { data: events, isLoading: _eventsLoading } = useAmplitudeEvents()
+  
+  // Fetch recordings
+  const { data: recordingsA, isLoading: recordingsALoading, refetch: refetchA } = useRecordingsList('A')
+  const { data: recordingsB, isLoading: recordingsBLoading, refetch: refetchB } = useRecordingsList('B')
+  const { data: recordingDataA } = useRecording(selectedRecordingA)
+  const { data: recordingDataB } = useRecording(selectedRecordingB)
+  
+  // Auto-select latest recording
+  useEffect(() => {
+    if (recordingsA && recordingsA.length > 0 && !selectedRecordingA) {
+      setSelectedRecordingA(recordingsA[0].sessionId)
+    }
+  }, [recordingsA, selectedRecordingA])
+  
+  useEffect(() => {
+    if (recordingsB && recordingsB.length > 0 && !selectedRecordingB) {
+      setSelectedRecordingB(recordingsB[0].sessionId)
+    }
+  }, [recordingsB, selectedRecordingB])
   
   // Sync with sidebar sub-navigation
   useEffect(() => {
@@ -188,16 +215,33 @@ export function ABTestingView({ subView }: ABTestingViewProps) {
 
         {/* User Flows Tab */}
         <TabsContent value="flows" className="space-y-8">
+          {/* Header with description */}
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-lg font-semibold">User Flows</h2>
+              <p className="text-sm text-muted-foreground">Analyze user journey through your tests</p>
+            </div>
+            <button
+              onClick={() => { refetchA(); refetchB(); }}
+              className="flex items-center gap-2 px-3 py-1.5 text-sm border rounded hover:bg-muted transition-colors"
+            >
+              <RefreshCw className="h-4 w-4" />
+              Refresh
+            </button>
+          </div>
+
           {/* Video Session Recordings - First */}
           <div>
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-medium flex items-center gap-2">
-                <Play className="h-5 w-5" />
+                <Video className="h-5 w-5" />
                 Session Recordings
               </h3>
               <button
                 onClick={isSynced ? handleStop : handleSyncPlay}
-                className="px-3 py-1.5 text-sm border rounded hover:bg-muted transition-colors"
+                className={`px-3 py-1.5 text-sm border rounded transition-colors ${
+                  isSynced ? 'bg-blue-500 text-white border-blue-500' : 'hover:bg-muted'
+                }`}
               >
                 {isSynced ? 'Stop Sync' : 'Sync Play'}
               </button>
@@ -205,17 +249,54 @@ export function ABTestingView({ subView }: ABTestingViewProps) {
             <div className="grid grid-cols-2 gap-6">
               {/* Version A Video */}
               <Card>
-                <div className="p-3 border-b bg-muted/50 flex items-center gap-2">
-                  <div className="w-2 h-2 bg-black rounded-full"></div>
-                  <span className="text-sm font-medium">Version A</span>
+                <div className="p-3 border-b bg-muted/50 flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 bg-black rounded-full"></div>
+                    <span className="text-sm font-medium">Version A</span>
+                  </div>
+                  {recordingsA && recordingsA.length > 0 && (
+                    <select
+                      value={selectedRecordingA || ''}
+                      onChange={(e) => setSelectedRecordingA(e.target.value)}
+                      className="text-xs border rounded px-2 py-1 bg-background"
+                    >
+                      {recordingsA.map((rec: RecordingMetadata) => (
+                        <option key={rec.sessionId} value={rec.sessionId}>
+                          {formatTimestamp(rec.startTime)} ({formatDuration(rec.duration)})
+                        </option>
+                      ))}
+                    </select>
+                  )}
                 </div>
                 <CardContent className="p-0">
-                  <div className="aspect-video bg-black rounded-b-lg flex items-center justify-center relative">
-                    <div className="text-center text-white">
-                      <Play className="h-12 w-12 mx-auto mb-2 opacity-50" />
-                      <p className="text-sm opacity-75">Session recording</p>
+                  {recordingsALoading ? (
+                    <div className="aspect-video bg-muted flex items-center justify-center">
+                      <RefreshCw className="h-6 w-6 animate-spin text-muted-foreground" />
                     </div>
-                  </div>
+                  ) : recordingsA && recordingsA.length > 0 ? (
+                    <SessionPlayer
+                      recording={recordingDataA || null}
+                      isPlaying={isPlayingA}
+                      progress={progressA}
+                      onProgressChange={(val) => {
+                        setProgressA(val)
+                        if (isSynced) setProgressB(val)
+                      }}
+                      onPlayPause={() => {
+                        const newState = !isPlayingA
+                        setIsPlayingA(newState)
+                        if (isSynced) setIsPlayingB(newState)
+                      }}
+                    />
+                  ) : (
+                    <div className="aspect-video bg-gradient-to-br from-gray-900 to-gray-800 flex items-center justify-center">
+                      <div className="text-center text-gray-400">
+                        <Play className="h-12 w-12 mx-auto mb-2 opacity-50" />
+                        <p className="text-sm opacity-75">No recordings yet</p>
+                        <p className="text-xs opacity-50 mt-1">Visit test-website to record</p>
+                      </div>
+                    </div>
+                  )}
                   {/* Controls */}
                   <div className="p-3 space-y-2 border-t">
                     <div className="flex items-center gap-2">
@@ -226,6 +307,7 @@ export function ABTestingView({ subView }: ABTestingViewProps) {
                           if (isSynced) setIsPlayingB(newState)
                         }}
                         className="p-2 border rounded hover:bg-muted"
+                        disabled={!recordingsA || recordingsA.length === 0}
                       >
                         {isPlayingA ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
                       </button>
@@ -241,27 +323,73 @@ export function ABTestingView({ subView }: ABTestingViewProps) {
                             if (isSynced) setProgressB(val)
                           }}
                           className="w-full"
+                          disabled={!recordingsA || recordingsA.length === 0}
                         />
                       </div>
-                      <span className="text-xs text-muted-foreground w-12 text-right">2:34</span>
+                      <span className="text-xs text-muted-foreground w-12 text-right">
+                        {recordingDataA ? formatDuration(recordingDataA.duration || 0) : '--:--'}
+                      </span>
                     </div>
+                    {recordingsA && (
+                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                        <Clock className="h-3 w-3" />
+                        <span>{recordingsA.length} screen capture{recordingsA.length !== 1 ? 's' : ''} available</span>
+                      </div>
+                    )}
                   </div>
                 </CardContent>
               </Card>
 
               {/* Version B Video */}
               <Card>
-                <div className="p-3 border-b bg-muted/50 flex items-center gap-2">
-                  <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                  <span className="text-sm font-medium">Version B</span>
+                <div className="p-3 border-b bg-blue-50/50 flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                    <span className="text-sm font-medium">Version B</span>
+                  </div>
+                  {recordingsB && recordingsB.length > 0 && (
+                    <select
+                      value={selectedRecordingB || ''}
+                      onChange={(e) => setSelectedRecordingB(e.target.value)}
+                      className="text-xs border rounded px-2 py-1 bg-background"
+                    >
+                      {recordingsB.map((rec: RecordingMetadata) => (
+                        <option key={rec.sessionId} value={rec.sessionId}>
+                          {formatTimestamp(rec.startTime)} ({formatDuration(rec.duration)})
+                        </option>
+                      ))}
+                    </select>
+                  )}
                 </div>
                 <CardContent className="p-0">
-                  <div className="aspect-video bg-black rounded-b-lg flex items-center justify-center relative">
-                    <div className="text-center text-white">
-                      <Play className="h-12 w-12 mx-auto mb-2 opacity-50" />
-                      <p className="text-sm opacity-75">Session recording</p>
+                  {recordingsBLoading ? (
+                    <div className="aspect-video bg-muted flex items-center justify-center">
+                      <RefreshCw className="h-6 w-6 animate-spin text-muted-foreground" />
                     </div>
-                  </div>
+                  ) : recordingsB && recordingsB.length > 0 ? (
+                    <SessionPlayer
+                      recording={recordingDataB || null}
+                      isPlaying={isPlayingB}
+                      progress={progressB}
+                      onProgressChange={(val) => {
+                        setProgressB(val)
+                        if (isSynced) setProgressA(val)
+                      }}
+                      onPlayPause={() => {
+                        const newState = !isPlayingB
+                        setIsPlayingB(newState)
+                        if (isSynced) setIsPlayingA(newState)
+                      }}
+                    />
+                  ) : (
+                    <div className="aspect-video bg-gradient-to-br from-blue-900/20 to-gray-800 flex items-center justify-center">
+                      <div className="text-center text-gray-400">
+                        <Play className="h-12 w-12 mx-auto mb-2 opacity-50" />
+                        <p className="text-sm opacity-75">No recordings yet</p>
+                        <p className="text-xs opacity-50 mt-1">Generate Version B first</p>
+                      </div>
+                    </div>
+                  )}
                   {/* Controls */}
                   <div className="p-3 space-y-2 border-t">
                     <div className="flex items-center gap-2">
@@ -272,6 +400,7 @@ export function ABTestingView({ subView }: ABTestingViewProps) {
                           if (isSynced) setIsPlayingA(newState)
                         }}
                         className="p-2 border rounded hover:bg-muted"
+                        disabled={!recordingsB || recordingsB.length === 0}
                       >
                         {isPlayingB ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
                       </button>
@@ -287,10 +416,19 @@ export function ABTestingView({ subView }: ABTestingViewProps) {
                             if (isSynced) setProgressA(val)
                           }}
                           className="w-full"
+                          disabled={!recordingsB || recordingsB.length === 0}
                         />
                       </div>
-                      <span className="text-xs text-muted-foreground w-12 text-right">1:47</span>
+                      <span className="text-xs text-muted-foreground w-12 text-right">
+                        {recordingDataB ? formatDuration(recordingDataB.duration || 0) : '--:--'}
+                      </span>
                     </div>
+                    {recordingsB && (
+                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                        <Clock className="h-3 w-3" />
+                        <span>{recordingsB.length} screen capture{recordingsB.length !== 1 ? 's' : ''} available</span>
+                      </div>
+                    )}
                   </div>
                 </CardContent>
               </Card>
