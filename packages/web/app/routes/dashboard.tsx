@@ -84,19 +84,91 @@ function AppSidebar({ currentView, onViewChange }: { currentView: string; onView
 }
 
 function AgentSetupView() {
+  const [amplitudeKey, setAmplitudeKey] = useState("");
+  const [githubToken, setGithubToken] = useState("");
+  const [generatedKey, setGeneratedKey] = useState("");
+
+  const handleGenerate = () => {
+    if (!amplitudeKey) return;
+    const key = `fl_${Math.random().toString(36).substring(2, 15)}${Math.random().toString(36).substring(2, 15)}`;
+    setGeneratedKey(key);
+  };
+
   return (
-    <div className="space-y-6 max-w-2xl">
+    <div className="space-y-6 max-w-xl">
       <div>
         <h2 className="text-xl font-semibold">Agent Setup</h2>
         <p className="text-muted-foreground text-sm mt-1">
-          Configure the AI agent for your website
+          Connect your analytics to start using the AI agent
         </p>
       </div>
+
       <Card>
-        <CardContent className="p-6 space-y-4">
-          <div className="text-sm text-muted-foreground">
-            Connect your analytics and let the agent learn from user behavior.
+        <CardContent className="p-6 space-y-6">
+          {/* Amplitude */}
+          <div className="space-y-2">
+            <label className="text-sm font-medium flex items-center gap-2">
+              <img src="/AMPLITUDE_FULL_BLUE.svg" alt="Amplitude" className="h-5" />
+              <span>API Key</span>
+              <span className="text-destructive">*</span>
+            </label>
+            <input
+              type="text"
+              value={amplitudeKey}
+              onChange={(e) => setAmplitudeKey(e.target.value)}
+              placeholder="Enter your Amplitude API key"
+              className="w-full px-3 py-2 text-sm border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-[hsl(var(--mypage))] focus:border-transparent"
+            />
+            <p className="text-xs text-muted-foreground">Required to analyze user behavior</p>
           </div>
+
+          {/* GitHub */}
+          <div className="space-y-2">
+            <label className="text-sm font-medium flex items-center gap-2">
+              <img src="/Github.svg" alt="GitHub" className="h-5 dark:invert" />
+              <span>Access Token</span>
+              <span className="text-muted-foreground text-xs">(optional)</span>
+            </label>
+            <input
+              type="text"
+              value={githubToken}
+              onChange={(e) => setGithubToken(e.target.value)}
+              placeholder="Enter your GitHub access token"
+              className="w-full px-3 py-2 text-sm border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-[hsl(var(--mypage))] focus:border-transparent"
+            />
+            <p className="text-xs text-muted-foreground">Enable auto-PRs for UI improvements</p>
+          </div>
+
+          <div className="pt-2">
+            <button
+              onClick={handleGenerate}
+              disabled={!amplitudeKey}
+              className="w-full px-4 py-2 text-sm font-medium text-white bg-[hsl(var(--mypage))] rounded-md hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-opacity"
+            >
+              Generate API Key
+            </button>
+          </div>
+
+          {/* Generated Key */}
+          {generatedKey && (
+            <div className="space-y-2 pt-2 border-t">
+              <label className="text-sm font-medium">Your Frictionless API Key</label>
+              <div className="flex gap-2">
+                <code className="flex-1 px-3 py-2 text-sm bg-muted rounded-md font-mono truncate">
+                  {generatedKey}
+                </code>
+                <button
+                  onClick={() => navigator.clipboard.writeText(generatedKey)}
+                  className="px-3 py-2 text-sm border rounded-md hover:bg-muted transition-colors"
+                >
+                  Copy
+                </button>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Use this key to authenticate the agent in your app
+              </p>
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>
