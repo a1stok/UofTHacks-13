@@ -2,8 +2,10 @@ export interface SessionRecording {
   sessionId: string
   version: string
   startTime: number
-  endTime?: number
+  endTime: number
+  duration: number
   events: any[]
+  isComplete: boolean
   metadata: {
     url: string
     userAgent: string
@@ -17,8 +19,10 @@ class SessionRecorder {
   private startTime: number = 0
   private stopFn: (() => void) | null = null
   private version: string = 'A'
-  private saveInterval: ReturnType<typeof setInterval> | null = null
   private isRecording: boolean = false
+  private inactivityTimer: ReturnType<typeof setTimeout> | null = null
+  private lastActivity: number = 0
+  private hasSaved: boolean = false
 
   constructor() {
     if (typeof window !== 'undefined') {
@@ -39,8 +43,10 @@ class SessionRecorder {
 
     this.events = []
     this.startTime = Date.now()
+    this.lastActivity = Date.now()
     this.sessionId = this.generateSessionId()
     this.isRecording = true
+    this.hasSaved = false
 
     console.log(`[SessionRecorder] Starting recording for ${this.version}`, this.sessionId)
 
@@ -50,6 +56,7 @@ class SessionRecorder {
     this.stopFn = record({
       emit: (event) => {
         this.events.push(event)
+        this.updateActivity()
       },
       checkoutEveryNms: 10000,
       maskAllInputs: false,
@@ -59,16 +66,20 @@ class SessionRecorder {
         input: 'last',
         mousemove: false,
       },
-    })
+    }) || null
 
-    // Auto-save every 30 seconds
-    this.saveInterval = setInterval(() => {
-      this.saveRecording()
-    }, 30000)
+    // Set up inactivity detection (saves after 30s of no activity)
+    this.setupInactivityDetection()
 
     // Save on page unload
     window.addEventListener('beforeunload', this.handleUnload)
     window.addEventListener('visibilitychange', this.handleVisibilityChange)
+    
+    // Add activity listeners
+    window.addEventListener('mousemove', this.handleActivity)
+    window.addEventListener('keydown', this.handleActivity)
+    window.addEventListener('click', this.handleActivity)
+    window.addEventListener('scroll', this.handleActivity)
   }
 
   private handleUnload = () => {
@@ -77,37 +88,83 @@ class SessionRecorder {
 
   private handleVisibilityChange = () => {
     if (document.visibilityState === 'hidden') {
-      this.saveRecording()
+      // Stop recording and save when tab becomes hidden
+      console.log('[SessionRecorder] Tab hidden, stopping recording')
+      this.stop()
     }
   }
 
+  private handleActivity = () => {
+    this.updateActivity()
+  }
+
+  private updateActivity() {
+    this.lastActivity = Date.now()
+    this.resetInactivityTimer()
+  }
+
+  private setupInactivityDetection() {
+    this.resetInactivityTimer()
+  }
+
+  private resetInactivityTimer() {
+    if (this.inactivityTimer) {
+      clearTimeout(this.inactivityTimer)
+    }
+
+    // Stop recording after 30 seconds of inactivity
+    this.inactivityTimer = setTimeout(() => {
+      if (this.isRecording) {
+        console.log('[SessionRecorder] 30s inactivity detected, stopping recording')
+        this.stop()
+      }
+    }, 30000) // 30 seconds
+  }
+
   stop() {
+    if (!this.isRecording) return
+    
     if (this.stopFn) {
       this.stopFn()
       this.stopFn = null
     }
 
-    if (this.saveInterval) {
-      clearInterval(this.saveInterval)
-      this.saveInterval = null
+    if (this.inactivityTimer) {
+      clearTimeout(this.inactivityTimer)
+      this.inactivityTimer = null
     }
 
+    // Remove all event listeners
     window.removeEventListener('beforeunload', this.handleUnload)
     window.removeEventListener('visibilitychange', this.handleVisibilityChange)
+    window.removeEventListener('mousemove', this.handleActivity)
+    window.removeEventListener('keydown', this.handleActivity)
+    window.removeEventListener('click', this.handleActivity)
+    window.removeEventListener('scroll', this.handleActivity)
 
     this.isRecording = false
-    this.saveRecording()
+    
+    // Save only once when stopping
+    if (!this.hasSaved) {
+      this.saveRecording()
+    }
   }
 
   async saveRecording() {
-    if (this.events.length === 0) return
+    if (this.events.length === 0 || this.hasSaved) return
+    
+    this.hasSaved = true
+    const endTime = Date.now()
+    const duration = endTime - this.startTime
 
     const recording: SessionRecording = {
       sessionId: this.sessionId,
       version: this.version,
       startTime: this.startTime,
-      endTime: Date.now(),
+      endTime,
+      duration,
       events: [...this.events],
+      isComplete: true,
       metadata: {
         url: window.location.href,
         userAgent: navigator.userAgent,
@@ -117,6 +174,9 @@ class SessionRecorder {
         },
       },
     }
+
+    console.log(`[SessionRecorder] Saving complete recording: ${this.sessionId}`)
+    console.log(`[SessionRecorder] Duration: ${(duration / 1000).toFixed(1)}s, Events: ${recording.events.length}`)
 
     try {
       // Use test-website API for saving recordings (it has CORS enabled)
@@ -130,12 +190,21 @@ class SessionRecorder {
       })
 
       if (response.ok) {
-        console.log(`[SessionRecorder] Recording saved: ${this.sessionId}`)
+        console.log(`[SessionRecorder] Recording saved successfully!`)
+        
+        // Dispatch custom event to notify dashboard
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new CustomEvent('sessionRecordingSaved', {
+            detail: { sessionId: this.sessionId, version: this.version }
+          }))
+        }
       } else {
         console.error('[SessionRecorder] Failed to save recording:', response.statusText)
+        this.hasSaved = false // Allow retry
       }
     } catch (error) {
       console.error('[SessionRecorder] Error saving recording:', error)
+      this.hasSaved = false // Allow retry
     }
   }
 

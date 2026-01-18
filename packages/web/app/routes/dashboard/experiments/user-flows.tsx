@@ -1,9 +1,9 @@
 import { useState, useEffect } from "react";
 import { Card, CardContent } from "~/components/ui/card";
-import { Users, ArrowRight, Eye, Brain, Play, Pause, RefreshCw, Clock, Video, Loader2, ExternalLink } from "lucide-react";
+import { Users, ArrowRight, Eye, Brain, Play, Pause, RefreshCw, Video, Loader2, ExternalLink } from "lucide-react";
 import type { Route } from "./+types/user-flows";
 import { useRecordingsList, useRecording } from "~/hooks/use-recordings";
-import { formatDuration, formatTimestamp, type RecordingMetadata } from "~/lib/recordings";
+import { formatDuration, type RecordingMetadata } from "~/lib/recordings";
 import { SessionPlayer } from "~/components/session-player";
 
 export function meta({}: Route.MetaArgs) {
@@ -91,24 +91,23 @@ export default function UserFlowsView() {
 
       {/* Session Recordings */}
       <div>
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-2">
+        <div className="flex items-center justify-between mb-6">
+          <h3 className="text-lg font-medium flex items-center gap-2">
             <Video className="h-5 w-5" />
-            <h3 className="text-lg font-medium">Session Recordings</h3>
-            <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded">test-website</span>
-          </div>
+            Session Recordings
+          </h3>
           <a 
             href="http://localhost:3000" 
             target="_blank" 
             rel="noopener noreferrer"
-            className="text-xs text-blue-600 hover:underline flex items-center gap-1"
+            className="text-xs text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1"
           >
             Open test-website <ExternalLink className="h-3 w-3" />
           </a>
         </div>
-        <div className="grid grid-cols-2 gap-6">
+        <div className="grid grid-cols-2 gap-8">
           {/* Version A Video */}
-          <Card>
+          <Card className="flex flex-col gap-0 py-0 overflow-hidden">
             <div className="p-3 border-b bg-muted/50 flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <div className="w-2 h-2 bg-black rounded-full"></div>
@@ -118,90 +117,80 @@ export default function UserFlowsView() {
                 <select
                   value={selectedRecordingA || ''}
                   onChange={(e) => setSelectedRecordingA(e.target.value)}
-                  className="text-xs border rounded px-2 py-1 bg-background"
+                  className="text-xs border rounded-md px-2 py-1.5 bg-background max-w-[180px]"
                 >
-                  {recordingsA.map((rec: RecordingMetadata) => (
+                  {recordingsA.map((rec: RecordingMetadata, index: number) => (
                     <option key={rec.sessionId} value={rec.sessionId}>
-                      {formatTimestamp(rec.startTime)} ({formatDuration(rec.duration)})
+                      Session {recordingsA.length - index} · {formatDuration(rec.duration)}
                     </option>
                   ))}
                 </select>
               )}
             </div>
             <CardContent className="p-0">
-              {recordingsALoading ? (
+              {recordingsALoading || recordingDataALoading ? (
                 <div className="aspect-video bg-muted flex items-center justify-center">
                   <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-                  <span className="ml-2 text-sm text-muted-foreground">Loading recordings...</span>
+                  <span className="ml-2 text-sm text-muted-foreground">Loading...</span>
                 </div>
-              ) : recordingDataALoading ? (
-                <div className="aspect-video bg-muted flex items-center justify-center">
-                  <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-                  <span className="ml-2 text-sm text-muted-foreground">Loading session...</span>
-                </div>
-              ) : recordingsA && recordingsA.length > 0 ? (
+              ) : recordingDataA && recordingDataA.events?.length > 0 ? (
                 <SessionPlayer
-                  recording={recordingDataA || null}
+                  recording={recordingDataA}
                   isPlaying={isPlayingA}
                 />
+              ) : recordingsA && recordingsA.length > 0 ? (
+                <div className="aspect-video bg-muted flex items-center justify-center">
+                  <div className="text-center text-muted-foreground">
+                    <Video className="h-10 w-10 mx-auto mb-2 opacity-50" />
+                    <p className="text-sm">Select a recording to play</p>
+                  </div>
+                </div>
               ) : (
                 <div className="aspect-video bg-gradient-to-br from-gray-900 to-gray-800 flex items-center justify-center">
                   <div className="text-center text-gray-400">
-                    <Play className="h-12 w-12 mx-auto mb-2 opacity-50" />
+                    <Play className="h-10 w-10 mx-auto mb-2 opacity-50" />
                     <p className="text-sm opacity-75">No recordings yet</p>
-                    <p className="text-xs opacity-50 mt-1">Visit test-website to start recording</p>
+                    <p className="text-xs opacity-50 mt-1">Visit test-website to record</p>
                   </div>
                 </div>
               )}
               {/* Controls */}
-              <div className="p-3 space-y-2 border-t">
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => {
-                      const newState = !isPlayingA;
-                      setIsPlayingA(newState);
-                      if (isSynced) setIsPlayingB(newState);
+              <div className="p-3 border-t flex items-center gap-3">
+                <button
+                  onClick={() => {
+                    const newState = !isPlayingA;
+                    setIsPlayingA(newState);
+                    if (isSynced) setIsPlayingB(newState);
+                  }}
+                  className="p-2 border rounded-md hover:bg-muted transition-colors disabled:opacity-50"
+                  disabled={!recordingDataA?.events?.length}
+                >
+                  {isPlayingA ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
+                </button>
+                <div className="flex-1">
+                  <input
+                    type="range"
+                    min="0"
+                    max="100"
+                    value={progressA}
+                    onChange={(e) => {
+                      const val = Number(e.target.value);
+                      setProgressA(val);
+                      if (isSynced) setProgressB(val);
                     }}
-                    className="p-2 border rounded hover:bg-muted"
-                    disabled={!recordingsA || recordingsA.length === 0}
-                  >
-                    {isPlayingA ? (
-                      <Pause className="h-4 w-4" />
-                    ) : (
-                      <Play className="h-4 w-4" />
-                    )}
-                  </button>
-                  <div className="flex-1">
-                    <input
-                      type="range"
-                      min="0"
-                      max="100"
-                      value={progressA}
-                      onChange={(e) => {
-                        const val = Number(e.target.value);
-                        setProgressA(val);
-                        if (isSynced) setProgressB(val);
-                      }}
-                      className="w-full"
-                      disabled={!recordingsA || recordingsA.length === 0}
-                    />
-                  </div>
-                  <span className="text-xs text-muted-foreground w-12 text-right">
-                    {recordingDataA ? formatDuration(recordingDataA.duration || 0) : '--:--'}
-                  </span>
+                    className="w-full"
+                    disabled={!recordingDataA?.events?.length}
+                  />
                 </div>
-                {recordingsA && (
-                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                    <Clock className="h-3 w-3" />
-                    <span>{recordingsA.length} screen capture{recordingsA.length !== 1 ? 's' : ''} available</span>
-                  </div>
-                )}
+                <span className="text-xs text-muted-foreground tabular-nums">
+                  {recordingDataA ? formatDuration(recordingDataA.duration || 0) : '0:00'}
+                </span>
               </div>
             </CardContent>
           </Card>
 
           {/* Version B Video */}
-          <Card>
+          <Card className="flex flex-col gap-0 py-0 overflow-hidden">
             <div className="p-3 border-b bg-blue-50/50 flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
@@ -211,84 +200,74 @@ export default function UserFlowsView() {
                 <select
                   value={selectedRecordingB || ''}
                   onChange={(e) => setSelectedRecordingB(e.target.value)}
-                  className="text-xs border rounded px-2 py-1 bg-background"
+                  className="text-xs border rounded-md px-2 py-1.5 bg-background max-w-[180px]"
                 >
-                  {recordingsB.map((rec: RecordingMetadata) => (
+                  {recordingsB.map((rec: RecordingMetadata, index: number) => (
                     <option key={rec.sessionId} value={rec.sessionId}>
-                      {formatTimestamp(rec.startTime)} ({formatDuration(rec.duration)})
+                      Session {recordingsB.length - index} · {formatDuration(rec.duration)}
                     </option>
                   ))}
                 </select>
               )}
             </div>
             <CardContent className="p-0">
-              {recordingsBLoading ? (
+              {recordingsBLoading || recordingDataBLoading ? (
                 <div className="aspect-video bg-muted flex items-center justify-center">
                   <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-                  <span className="ml-2 text-sm text-muted-foreground">Loading recordings...</span>
+                  <span className="ml-2 text-sm text-muted-foreground">Loading...</span>
                 </div>
-              ) : recordingDataBLoading ? (
-                <div className="aspect-video bg-muted flex items-center justify-center">
-                  <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-                  <span className="ml-2 text-sm text-muted-foreground">Loading session...</span>
-                </div>
-              ) : recordingsB && recordingsB.length > 0 ? (
+              ) : recordingDataB && recordingDataB.events?.length > 0 ? (
                 <SessionPlayer
-                  recording={recordingDataB || null}
+                  recording={recordingDataB}
                   isPlaying={isPlayingB}
                 />
+              ) : recordingsB && recordingsB.length > 0 ? (
+                <div className="aspect-video bg-muted flex items-center justify-center">
+                  <div className="text-center text-muted-foreground">
+                    <Video className="h-10 w-10 mx-auto mb-2 opacity-50" />
+                    <p className="text-sm">Select a recording to play</p>
+                  </div>
+                </div>
               ) : (
                 <div className="aspect-video bg-gradient-to-br from-gray-900 to-gray-800 flex items-center justify-center">
                   <div className="text-center text-gray-400">
-                    <Play className="h-12 w-12 mx-auto mb-2 opacity-50" />
+                    <Play className="h-10 w-10 mx-auto mb-2 opacity-50" />
                     <p className="text-sm opacity-75">No recordings yet</p>
                     <p className="text-xs opacity-50 mt-1">Generate Version B first</p>
                   </div>
                 </div>
               )}
               {/* Controls */}
-              <div className="p-3 space-y-2 border-t">
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => {
-                      const newState = !isPlayingB;
-                      setIsPlayingB(newState);
-                      if (isSynced) setIsPlayingA(newState);
+              <div className="p-3 border-t flex items-center gap-3">
+                <button
+                  onClick={() => {
+                    const newState = !isPlayingB;
+                    setIsPlayingB(newState);
+                    if (isSynced) setIsPlayingA(newState);
+                  }}
+                  className="p-2 border rounded-md hover:bg-muted transition-colors disabled:opacity-50"
+                  disabled={!recordingDataB?.events?.length}
+                >
+                  {isPlayingB ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
+                </button>
+                <div className="flex-1">
+                  <input
+                    type="range"
+                    min="0"
+                    max="100"
+                    value={progressB}
+                    onChange={(e) => {
+                      const val = Number(e.target.value);
+                      setProgressB(val);
+                      if (isSynced) setProgressA(val);
                     }}
-                    className="p-2 border rounded hover:bg-muted"
-                    disabled={!recordingsB || recordingsB.length === 0}
-                  >
-                    {isPlayingB ? (
-                      <Pause className="h-4 w-4" />
-                    ) : (
-                      <Play className="h-4 w-4" />
-                    )}
-                  </button>
-                  <div className="flex-1">
-                    <input
-                      type="range"
-                      min="0"
-                      max="100"
-                      value={progressB}
-                      onChange={(e) => {
-                        const val = Number(e.target.value);
-                        setProgressB(val);
-                        if (isSynced) setProgressA(val);
-                      }}
-                      className="w-full"
-                      disabled={!recordingsB || recordingsB.length === 0}
-                    />
-                  </div>
-                  <span className="text-xs text-muted-foreground w-12 text-right">
-                    {recordingDataB ? formatDuration(recordingDataB.duration || 0) : '--:--'}
-                  </span>
+                    className="w-full"
+                    disabled={!recordingDataB?.events?.length}
+                  />
                 </div>
-                {recordingsB && (
-                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                    <Clock className="h-3 w-3" />
-                    <span>{recordingsB.length} screen capture{recordingsB.length !== 1 ? 's' : ''} available</span>
-                  </div>
-                )}
+                <span className="text-xs text-muted-foreground tabular-nums">
+                  {recordingDataB ? formatDuration(recordingDataB.duration || 0) : '0:00'}
+                </span>
               </div>
             </CardContent>
           </Card>
@@ -297,28 +276,28 @@ export default function UserFlowsView() {
 
       {/* Flow Comparison */}
       <div>
-        <h3 className="text-lg font-medium mb-4 flex items-center gap-2">
+        <h3 className="text-lg font-medium mb-6 flex items-center gap-2">
           <Eye className="h-5 w-5" />
           Flow Comparison
         </h3>
-        <div className="grid grid-cols-2 gap-6">
+        <div className="grid grid-cols-2 gap-8">
           {/* Version A Flow */}
-          <Card>
+          <Card className="flex flex-col gap-0 py-0 overflow-hidden">
             <div className="p-3 border-b bg-muted/50 flex items-center gap-2">
               <div className="w-2 h-2 bg-black rounded-full"></div>
               <span className="text-sm font-medium">Version A (Original)</span>
             </div>
-            <CardContent className="p-4">
-              <div className="space-y-2">
-                <div className="p-2 border rounded text-center text-sm">Landing</div>
+            <CardContent className="p-4 flex-1">
+              <div className="space-y-3">
+                <div className="p-3 border rounded-lg text-center text-sm bg-background hover:bg-muted/50 transition-colors">Landing</div>
                 <div className="flex justify-center">
-                  <ArrowRight className="h-3 w-3 text-muted-foreground rotate-90" />
+                  <ArrowRight className="h-4 w-4 text-muted-foreground rotate-90" />
                 </div>
-                <div className="p-2 border rounded text-center text-sm">Product</div>
+                <div className="p-3 border rounded-lg text-center text-sm bg-background hover:bg-muted/50 transition-colors">Product</div>
                 <div className="flex justify-center">
-                  <ArrowRight className="h-3 w-3 text-muted-foreground rotate-90" />
+                  <ArrowRight className="h-4 w-4 text-muted-foreground rotate-90" />
                 </div>
-                <div className="p-2 border rounded text-center text-sm bg-muted">
+                <div className="p-3 border rounded-lg text-center text-sm bg-muted border-red-200 text-red-700">
                   Exit (65%)
                 </div>
               </div>
@@ -326,22 +305,22 @@ export default function UserFlowsView() {
           </Card>
 
           {/* Version B Flow */}
-          <Card>
+          <Card className="flex flex-col gap-0 py-0 overflow-hidden">
             <div className="p-3 border-b bg-muted/50 flex items-center gap-2">
               <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
               <span className="text-sm font-medium">Version B (Generated)</span>
             </div>
-            <CardContent className="p-4">
-              <div className="space-y-2">
-                <div className="p-2 border rounded text-center text-sm">Landing</div>
+            <CardContent className="p-4 flex-1">
+              <div className="space-y-3">
+                <div className="p-3 border rounded-lg text-center text-sm bg-background hover:bg-muted/50 transition-colors">Landing</div>
                 <div className="flex justify-center">
-                  <ArrowRight className="h-3 w-3 text-muted-foreground rotate-90" />
+                  <ArrowRight className="h-4 w-4 text-muted-foreground rotate-90" />
                 </div>
-                <div className="p-2 border rounded text-center text-sm">Product</div>
+                <div className="p-3 border rounded-lg text-center text-sm bg-background hover:bg-muted/50 transition-colors">Product</div>
                 <div className="flex justify-center">
-                  <ArrowRight className="h-3 w-3 text-muted-foreground rotate-90" />
+                  <ArrowRight className="h-4 w-4 text-muted-foreground rotate-90" />
                 </div>
-                <div className="p-2 border rounded text-center text-sm bg-blue-50">
+                <div className="p-3 border rounded-lg text-center text-sm bg-blue-50 border-blue-200 text-blue-700">
                   Convert (43%)
                 </div>
               </div>
@@ -352,54 +331,54 @@ export default function UserFlowsView() {
 
       {/* AI Flow Analysis */}
       <div>
-        <h3 className="text-lg font-medium mb-4 flex items-center gap-2">
+        <h3 className="text-lg font-medium mb-6 flex items-center gap-2">
           <Brain className="h-5 w-5" />
           AI Flow Analysis
         </h3>
-        <div className="grid grid-cols-2 gap-6">
+        <div className="grid grid-cols-2 gap-8">
           {/* Version A Analysis */}
-          <Card>
+          <Card className="flex flex-col gap-0 py-0 overflow-hidden">
             <div className="p-3 border-b bg-muted/50 flex items-center gap-2">
               <div className="w-2 h-2 bg-black rounded-full"></div>
               <span className="text-sm font-medium">Version A Journey</span>
             </div>
-            <CardContent className="p-4 space-y-3">
-              <div className="text-sm text-muted-foreground space-y-1">
-                <div className="p-2 bg-muted/30 rounded text-sm">
-                  <strong>1. Landing:</strong> button.hero-cta clicked - delay: 3.2s
+            <CardContent className="p-4 space-y-3 flex-1">
+              <div className="text-sm space-y-2">
+                <div className="p-3 bg-muted/30 rounded-lg text-sm border">
+                  <strong className="text-foreground">1. Landing:</strong> <span className="text-muted-foreground">button.hero-cta clicked - delay: 3.2s</span>
                 </div>
-                <div className="p-2 bg-muted/30 rounded text-sm">
-                  <strong>2. Product:</strong> div.product-info scrolled - 45% depth
+                <div className="p-3 bg-muted/30 rounded-lg text-sm border">
+                  <strong className="text-foreground">2. Product:</strong> <span className="text-muted-foreground">div.product-info scrolled - 45% depth</span>
                 </div>
-                <div className="p-2 bg-muted/30 rounded text-sm">
-                  <strong>3. Form:</strong> input[type="email"] focused - abandoned
+                <div className="p-3 bg-muted/30 rounded-lg text-sm border">
+                  <strong className="text-foreground">3. Form:</strong> <span className="text-muted-foreground">input[type="email"] focused - abandoned</span>
                 </div>
-                <div className="p-2 bg-muted border border-black/20 rounded text-sm">
-                  <strong>Drop-off:</strong> 65% users exit at signup form
+                <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-sm">
+                  <strong className="text-red-700">Drop-off:</strong> <span className="text-red-600">65% users exit at signup form</span>
                 </div>
               </div>
             </CardContent>
           </Card>
 
           {/* Version B Analysis */}
-          <Card>
+          <Card className="flex flex-col gap-0 py-0 overflow-hidden">
             <div className="p-3 border-b bg-muted/50 flex items-center gap-2">
               <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
               <span className="text-sm font-medium">Version B Journey</span>
             </div>
-            <CardContent className="p-4 space-y-3">
-              <div className="text-sm text-muted-foreground space-y-1">
-                <div className="p-2 bg-blue-50 rounded text-sm">
-                  <strong>1. Landing:</strong> button.hero-cta clicked - delay: 1.8s
+            <CardContent className="p-4 space-y-3 flex-1">
+              <div className="text-sm space-y-2">
+                <div className="p-3 bg-blue-50 rounded-lg text-sm border border-blue-100">
+                  <strong className="text-blue-700">1. Landing:</strong> <span className="text-blue-600">button.hero-cta clicked - delay: 1.8s</span>
                 </div>
-                <div className="p-2 bg-blue-50 rounded text-sm">
-                  <strong>2. Product:</strong> div.product-info scrolled - 78% depth
+                <div className="p-3 bg-blue-50 rounded-lg text-sm border border-blue-100">
+                  <strong className="text-blue-700">2. Product:</strong> <span className="text-blue-600">div.product-info scrolled - 78% depth</span>
                 </div>
-                <div className="p-2 bg-blue-50 rounded text-sm">
-                  <strong>3. Form:</strong> input[type="email"] focused - completed
+                <div className="p-3 bg-blue-50 rounded-lg text-sm border border-blue-100">
+                  <strong className="text-blue-700">3. Form:</strong> <span className="text-blue-600">input[type="email"] focused - completed</span>
                 </div>
-                <div className="p-2 bg-blue-50 border border-blue-200 rounded text-sm">
-                  <strong>Success:</strong> 43% users complete signup (+28%)
+                <div className="p-3 bg-green-50 border border-green-200 rounded-lg text-sm">
+                  <strong className="text-green-700">Success:</strong> <span className="text-green-600">43% users complete signup (+28%)</span>
                 </div>
               </div>
             </CardContent>
