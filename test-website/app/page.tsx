@@ -6,7 +6,7 @@ export default function Home() {
   return (
     <main className="min-h-screen bg-gradient-to-br from-background to-secondary">
       {/* Hero Section */}
-      <section className="container mx-auto px-4 py-16">
+      <section className="container mx-auto px-4 py-8">
         <div className="flex flex-col items-center text-center gap-6">
           {/* Logo */}
           <div className="relative w-80 h-80 md:w-96 md:h-96 drop-shadow-2xl rounded-xl overflow-hidden">
@@ -20,17 +20,17 @@ export default function Home() {
           </div>
           
           {/* Title */}
-          <div className="space-y-2">
+          <div className="space-y-2 max-w-4xl">
             <h1 className="text-4xl md:text-6xl font-bold text-foreground">
               Frictionless
             </h1>
-            <p className="text-xl md:text-2xl text-muted-foreground max-w-2xl">
-              The AI UX Researcher — Detect friction patterns and get prioritized UI fixes with evidence
+            <p className="text-xl md:text-2xl text-muted-foreground">
+              Turn behavioral events into AI-powered UX insights that automatically improve your product
             </p>
           </div>
 
           {/* CTA Buttons */}
-          <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+          <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto max-w-md">
             <a href="#features" className="inline-block w-full sm:w-auto">
               <Button 
                 size="lg" 
@@ -69,83 +69,85 @@ export default function Home() {
       </section>
 
       {/* Features Section */}
-      <section id="features" className="container mx-auto px-4 py-16">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <section id="features" className="container mx-auto px-4 py-8">
+        <div className="max-w-6xl mx-auto">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <Card className="shadow-lg hover:shadow-xl transition-shadow">
-            <CardHeader>
-              <CardTitle>AI-Powered Detection</CardTitle>
-              <CardDescription>
-                Automatically identify friction patterns in user behavior
+            <CardHeader className="p-6 pb-3">
+              <CardTitle className="text-2xl">Behavioral Event Tracking</CardTitle>
+              <CardDescription className="text-sm">
+                Capture product analytics-style events in real-time
               </CardDescription>
             </CardHeader>
-            <CardContent>
-              <p className="text-sm text-muted-foreground">
-                Analyzes behavioral events like clicks, hovers, searches, and rage clicks to detect where users struggle in your interface.
+            <CardContent className="p-6 pt-3">
+              <p className="text-base text-muted-foreground">
+                Track user actions like clicks, searches, rage clicks, and navigation patterns. We treat data like behavioral product analytics with proper event schemas and user properties.
               </p>
             </CardContent>
           </Card>
 
           <Card className="shadow-lg hover:shadow-xl transition-shadow">
-            <CardHeader>
-              <CardTitle>Prioritized Fixes</CardTitle>
-              <CardDescription>
-                Get actionable recommendations with evidence-backed insights
+            <CardHeader className="p-6 pb-3">
+              <CardTitle className="text-2xl">AI-Powered Insights</CardTitle>
+              <CardDescription className="text-sm">
+                AI does what rules engines cannot - find hidden patterns
               </CardDescription>
             </CardHeader>
-            <CardContent>
-              <p className="text-sm text-muted-foreground">
-                Receive specific, prioritized UI fixes with behavioral evidence, user journey maps, and predicted impact metrics.
+            <CardContent className="p-6 pt-3">
+              <p className="text-base text-muted-foreground">
+                Our AI analyzes behavioral data to detect friction patterns, segment users by behavior, and surface insights that no manual rules could find. It's like having a data analyst watching every session.
               </p>
             </CardContent>
           </Card>
 
           <Card className="shadow-lg hover:shadow-xl transition-shadow">
-            <CardHeader>
-              <CardTitle>Self-Improving Loop</CardTitle>
-              <CardDescription>
-                Continuous learning from user behavior and your decisions
+            <CardHeader className="p-6 pb-3">
+              <CardTitle className="text-2xl">Self-Improving Product</CardTitle>
+              <CardDescription className="text-sm">
+                Data → Insights → Action loop that gets smarter over time
               </CardDescription>
             </CardHeader>
-            <CardContent>
-              <p className="text-sm text-muted-foreground">
-                The system learns from every session and your feedback, creating a self-improving product that gets better over time.
+            <CardContent className="p-6 pt-3">
+              <p className="text-base text-muted-foreground">
+                Every user interaction feeds back into the system. The AI learns from outcomes, adapts its recommendations, and continuously improves the product experience automatically.
               </p>
             </CardContent>
           </Card>
+          </div>
         </div>
       </section>
 
       {/* Project Details */}
-      <section id="how-it-works" className="container mx-auto px-4 py-16">
-        <div className="max-w-4xl mx-auto">
+      <section id="how-it-works" className="container mx-auto px-4 py-8">
+        <div className="max-w-6xl mx-auto">
           <Card className="shadow-xl">
-            <CardHeader className="text-center pb-4">
-              <CardTitle className="text-3xl mb-1">How It Works</CardTitle>
-              <CardDescription className="text-lg">
-                From behavioral events to actionable insights
+            <CardHeader className="text-center pb-3 p-4">
+              <CardTitle className="text-2xl mb-1">The Amplitude-Style Loop</CardTitle>
+              <CardDescription className="text-base">
+                Behavioral events → AI analysis → Product improvements
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="space-y-4 p-4 pt-2">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="space-y-2 text-center p-4 rounded-lg bg-secondary/50">
+                <div className="space-y-2 text-center p-6 rounded-lg bg-secondary/50 flex flex-col h-full">
                   <div className="text-3xl font-bold text-primary mb-1">1</div>
-                  <h3 className="font-semibold text-lg">Capture Events</h3>
-                  <p className="text-sm text-muted-foreground">
-                    Stream behavioral events: clicks, hovers, searches, navigation patterns, and rage clicks in real-time.
+                  <h3 className="font-semibold text-lg">Track Behavioral Events</h3>
+                  <p className="text-sm text-muted-foreground flex-1">
+                    Capture product analytics events like page_viewed, feature_clicked, rage_click_detected, and user_struggled with proper event schemas and properties.
                   </p>
                 </div>
-                <div className="space-y-2 text-center p-4 rounded-lg bg-secondary/50">
+                <div className="space-y-2 text-center p-6 rounded-lg bg-secondary/50 flex flex-col h-full">
                   <div className="text-3xl font-bold text-primary mb-1">2</div>
-                  <h3 className="font-semibold text-lg">AI Analysis</h3>
-                  <p className="text-sm text-muted-foreground">
-                    Advanced AI detects friction patterns, dead-end workflows, and identifies unused features eating UI space.
+                  <h3 className="font-semibold text-lg">AI Detects Patterns</h3>
+                  <p className="text-sm text-muted-foreground flex-1">
+                    AI clusters users by behavior, detects friction patterns, and identifies opportunities that rules-based systems would miss. It's pattern recognition beyond manual segmentation.
                   </p>
                 </div>
-                <div className="space-y-2 text-center p-4 rounded-lg bg-secondary/50">
+                <div className="space-y-2 text-center p-6 rounded-lg bg-secondary/50 flex flex-col h-full">
                   <div className="text-3xl font-bold text-primary mb-1">3</div>
-                  <h3 className="font-semibold text-lg">Get Fixes</h3>
-                  <p className="text-sm text-muted-foreground">
-                    Receive prioritized recommendations with evidence, user journey maps, and predicted impact metrics.
+                  <h3 className="font-semibold text-lg">Improve Product</h3>
+                  <p className="text-sm text-muted-foreground flex-1">
+                    The system automatically suggests product changes, UI improvements, and intervention strategies based on behavioral insights. The product improves itself.
                   </p>
                 </div>
               </div>
