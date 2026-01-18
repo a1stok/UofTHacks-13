@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "UofT Hacks",
-  description: "University of Toronto Hackathon",
+  title: "Frictionless",
+  description: "The AI UX Researcher — Detect friction patterns and get prioritized UI fixes with evidence",
 };
 
 export default function RootLayout({
