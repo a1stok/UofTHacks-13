@@ -10,12 +10,18 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  SidebarMenuSub,
+  SidebarMenuSubButton,
+  SidebarMenuSubItem,
   SidebarProvider,
   SidebarTrigger,
 } from "~/components/ui/sidebar";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "~/components/ui/collapsible";
 import { Card, CardContent } from "~/components/ui/card";
-import { Settings, Play, Zap, Eye, GitCompare, MousePointer } from "lucide-react";
+import { Settings, Play, Zap, Eye, GitCompare, MousePointer, ChevronRight, Globe, FlaskConical, LayoutTemplate, Sparkles, PenTool, Users, GitBranch } from "lucide-react";
 import type { Route } from "./+types/dashboard";
+import amplitude from "../../public/AMPLITUDE_FULL_BLUE.svg";
+import github from "../../public/Github.svg";
 
 export function meta({}: Route.MetaArgs) {
   return [
@@ -24,15 +30,22 @@ export function meta({}: Route.MetaArgs) {
   ];
 }
 
-const menuItems = [
-  { id: "setup", title: "Agent Setup", icon: Settings },
-  { id: "demo-live", title: "Live Events", icon: Zap },
-  { id: "demo-diff", title: "Visual Diff", icon: Eye },
-  { id: "demo-ab", title: "A/B Compare", icon: GitCompare },
-  { id: "demo-clicks", title: "Click Analysis", icon: MousePointer },
+const websiteGeneratorItems = [
+  { id: "templates", title: "Templates", icon: LayoutTemplate },
+  { id: "ai-generated", title: "AI Generated", icon: Sparkles },
+  { id: "manual", title: "Manual", icon: PenTool },
+];
+
+const abTestingItems = [
+  { id: "ab-testing", title: "A/B Testing", icon: GitCompare },
+  { id: "paired-overview", title: "Paired Overview", icon: GitBranch },
+  { id: "user-flows", title: "User Flows", icon: Users },
 ];
 
 function AppSidebar({ currentView, onViewChange }: { currentView: string; onViewChange: (view: string) => void }) {
+  const [websiteGenOpen, setWebsiteGenOpen] = useState(true);
+  const [abTestingOpen, setAbTestingOpen] = useState(true);
+
   return (
     <Sidebar>
       <SidebarHeader className="border-b border-sidebar-border px-4 py-3">
@@ -60,21 +73,66 @@ function AppSidebar({ currentView, onViewChange }: { currentView: string; onView
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
+
         <SidebarGroup>
-          <SidebarGroupLabel>Demos</SidebarGroupLabel>
+          <SidebarGroupLabel>Tools</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {menuItems.slice(1).map((item) => (
-                <SidebarMenuItem key={item.id}>
-                  <SidebarMenuButton
-                    isActive={currentView === item.id}
-                    onClick={() => onViewChange(item.id)}
-                  >
-                    <item.icon className="size-4" />
-                    <span>{item.title}</span>
-                  </SidebarMenuButton>
+              {/* Website Generator Folder */}
+              <Collapsible open={websiteGenOpen} onOpenChange={setWebsiteGenOpen} className="group/collapsible">
+                <SidebarMenuItem>
+                  <CollapsibleTrigger asChild>
+                    <SidebarMenuButton>
+                      <Globe className="size-4" />
+                      <span>Website Generator</span>
+                      <ChevronRight className="ml-auto size-4 transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
+                    </SidebarMenuButton>
+                  </CollapsibleTrigger>
+                  <CollapsibleContent>
+                    <SidebarMenuSub>
+                      {websiteGeneratorItems.map((item) => (
+                        <SidebarMenuSubItem key={item.id}>
+                          <SidebarMenuSubButton
+                            isActive={currentView === item.id}
+                            onClick={() => onViewChange(item.id)}
+                          >
+                            <item.icon className="size-4" />
+                            <span>{item.title}</span>
+                          </SidebarMenuSubButton>
+                        </SidebarMenuSubItem>
+                      ))}
+                    </SidebarMenuSub>
+                  </CollapsibleContent>
                 </SidebarMenuItem>
-              ))}
+              </Collapsible>
+
+              {/* A/B Testing Folder */}
+              <Collapsible open={abTestingOpen} onOpenChange={setAbTestingOpen} className="group/collapsible">
+                <SidebarMenuItem>
+                  <CollapsibleTrigger asChild>
+                    <SidebarMenuButton>
+                      <FlaskConical className="size-4" />
+                      <span>A/B Testing</span>
+                      <ChevronRight className="ml-auto size-4 transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
+                    </SidebarMenuButton>
+                  </CollapsibleTrigger>
+                  <CollapsibleContent>
+                    <SidebarMenuSub>
+                      {abTestingItems.map((item) => (
+                        <SidebarMenuSubItem key={item.id}>
+                          <SidebarMenuSubButton
+                            isActive={currentView === item.id}
+                            onClick={() => onViewChange(item.id)}
+                          >
+                            <item.icon className="size-4" />
+                            <span>{item.title}</span>
+                          </SidebarMenuSubButton>
+                        </SidebarMenuSubItem>
+                      ))}
+                    </SidebarMenuSub>
+                  </CollapsibleContent>
+                </SidebarMenuItem>
+              </Collapsible>
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
@@ -95,82 +153,66 @@ function AgentSetupView() {
   };
 
   return (
-    <div className="space-y-6 max-w-xl">
+    <div className="max-w-md space-y-8">
       <div>
-        <h2 className="text-xl font-semibold">Agent Setup</h2>
-        <p className="text-muted-foreground text-sm mt-1">
-          Connect your analytics to start using the AI agent
-        </p>
+        <h2 className="text-lg font-medium">Connect your services</h2>
       </div>
 
-      <Card>
-        <CardContent className="p-6 space-y-6">
-          {/* Amplitude */}
-          <div className="space-y-2">
-            <label className="text-sm font-medium flex items-center gap-2">
-              <img src="/AMPLITUDE_FULL_BLUE.svg" alt="Amplitude" className="h-5" />
-              <span>API Key</span>
-              <span className="text-destructive">*</span>
-            </label>
-            <input
-              type="text"
-              value={amplitudeKey}
-              onChange={(e) => setAmplitudeKey(e.target.value)}
-              placeholder="Enter your Amplitude API key"
-              className="w-full px-3 py-2 text-sm border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-[hsl(var(--mypage))] focus:border-transparent"
-            />
-            <p className="text-xs text-muted-foreground">Required to analyze user behavior</p>
-          </div>
+      <div className="space-y-5">
+        <div className="space-y-1.5">
+          <label className="text-sm text-muted-foreground flex items-center gap-2">
+            <img src={amplitude} alt="Amplitude" className="h-20" />
+            API Key
+          </label>
+          <input
+            type="text"
+            value={amplitudeKey}
+            onChange={(e) => setAmplitudeKey(e.target.value)}
+            placeholder="amp_xxxxxxxx"
+            className="w-full px-3 py-2 text-sm border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-[hsl(var(--mypage))] focus:border-transparent"
+          />
+        </div>
 
-          {/* GitHub */}
-          <div className="space-y-2">
-            <label className="text-sm font-medium flex items-center gap-2">
-              <img src="/Github.svg" alt="GitHub" className="h-5 dark:invert" />
-              <span>Access Token</span>
-              <span className="text-muted-foreground text-xs">(optional)</span>
-            </label>
-            <input
-              type="text"
-              value={githubToken}
-              onChange={(e) => setGithubToken(e.target.value)}
-              placeholder="Enter your GitHub access token"
-              className="w-full px-3 py-2 text-sm border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-[hsl(var(--mypage))] focus:border-transparent"
-            />
-            <p className="text-xs text-muted-foreground">Enable auto-PRs for UI improvements</p>
-          </div>
+        <div className="space-y-1.5">
+          <label className="text-sm text-muted-foreground flex items-center gap-2">
+            <img src={github} alt="GitHub" className="h-20 dark:invert" />
+            Access Token
+            <span className="text-xs opacity-60">optional</span>
+          </label>
+          <input
+            type="text"
+            value={githubToken}
+            onChange={(e) => setGithubToken(e.target.value)}
+            placeholder="ghp_xxxxxxxx"
+            className="w-full px-3 py-2 text-sm border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-[hsl(var(--mypage))] focus:border-transparent"
+          />
+        </div>
 
-          <div className="pt-2">
+        <button
+          onClick={handleGenerate}
+          disabled={!amplitudeKey}
+          className="w-full px-4 py-2 text-sm font-medium text-white bg-[hsl(var(--mypage))] rounded-md hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-opacity"
+        >
+          Generate API Key
+        </button>
+      </div>
+
+      {generatedKey && (
+        <div className="space-y-2 pt-4 border-t">
+          <label className="text-sm text-muted-foreground">Your API Key</label>
+          <div className="flex gap-2">
+            <code className="flex-1 px-3 py-2 text-sm bg-muted rounded-md font-mono truncate">
+              {generatedKey}
+            </code>
             <button
-              onClick={handleGenerate}
-              disabled={!amplitudeKey}
-              className="w-full px-4 py-2 text-sm font-medium text-white bg-[hsl(var(--mypage))] rounded-md hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-opacity"
+              onClick={() => navigator.clipboard.writeText(generatedKey)}
+              className="px-3 py-2 text-sm border rounded-md hover:bg-muted transition-colors"
             >
-              Generate API Key
+              Copy
             </button>
           </div>
-
-          {/* Generated Key */}
-          {generatedKey && (
-            <div className="space-y-2 pt-2 border-t">
-              <label className="text-sm font-medium">Your Frictionless API Key</label>
-              <div className="flex gap-2">
-                <code className="flex-1 px-3 py-2 text-sm bg-muted rounded-md font-mono truncate">
-                  {generatedKey}
-                </code>
-                <button
-                  onClick={() => navigator.clipboard.writeText(generatedKey)}
-                  className="px-3 py-2 text-sm border rounded-md hover:bg-muted transition-colors"
-                >
-                  Copy
-                </button>
-              </div>
-              <p className="text-xs text-muted-foreground">
-                Use this key to authenticate the agent in your app
-              </p>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+        </div>
+      )}
     </div>
   );
 }
@@ -199,14 +241,20 @@ export default function Dashboard() {
     switch (currentView) {
       case "setup":
         return <AgentSetupView />;
-      case "demo-live":
-        return <DemoPlaceholder title="Live Events" description="Watch real-time user interactions" />;
-      case "demo-diff":
-        return <DemoPlaceholder title="Visual Diff" description="See AI-suggested UI improvements" />;
-      case "demo-ab":
-        return <DemoPlaceholder title="A/B Compare" description="Compare original vs optimized versions" />;
-      case "demo-clicks":
-        return <DemoPlaceholder title="Click Analysis" description="Analyze click patterns and friction points" />;
+      // Website Generator views
+      case "templates":
+        return <DemoPlaceholder title="Templates" description="Choose from pre-built website templates" />;
+      case "ai-generated":
+        return <DemoPlaceholder title="AI Generated" description="Generate websites using AI" />;
+      case "manual":
+        return <DemoPlaceholder title="Manual" description="Build your website manually" />;
+      // A/B Testing views
+      case "ab-testing":
+        return <DemoPlaceholder title="A/B Testing" description="Create and manage A/B tests" />;
+      case "paired-overview":
+        return <DemoPlaceholder title="Paired Overview" description="Compare test variants side by side" />;
+      case "user-flows":
+        return <DemoPlaceholder title="User Flows" description="Analyze user journey through your tests" />;
       default:
         return <AgentSetupView />;
     }
