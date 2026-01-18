@@ -20,7 +20,7 @@ class SessionRecorder {
   private sessionId: string = ''
   private startTime: number = 0
   private stopFn: (() => void) | null = null
-  private version: string = 'A' // Default version, can be set dynamically
+  private version: string = 'B' // Set to B for the AI-generated version
   private saveInterval: NodeJS.Timeout | null = null
   private isRecording: boolean = false
 
@@ -49,7 +49,7 @@ class SessionRecorder {
     console.log(`[SessionRecorder] Starting recording for ${this.version}`, this.sessionId)
 
     this.stopFn = record({
-      emit: (event) => {
+      emit: (event: any) => {
         this.events.push(event)
       },
       // Capture all mutations
@@ -124,7 +124,7 @@ class SessionRecorder {
     }
 
     try {
-      const response = await fetch('http://localhost:3001/api/recordings', {
+      const response = await fetch('http://localhost:3002/api/recordings', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

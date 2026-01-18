@@ -37,7 +37,7 @@ const lightModeStyles: React.CSSProperties = {
   "--ring": "#9f9d96",
 };
 
-export function meta({}: Route.MetaArgs) {
+export function meta({ }: Route.MetaArgs) {
   return [
     { title: "AI Generated - Website Generator" },
     { name: "description", content: "Generate websites using AI" },
@@ -472,7 +472,7 @@ export default function AIGeneratedView() {
       id: "welcome",
       role: "assistant",
       content:
-        "Hi! I'm your AI design assistant. I can help you modify content, change colors, rearrange sections, or remove/add components. Try saying something like:\n\n• \"Make it more modern\"\n• \"Remove the features section\"\n• \"Move hero to the bottom\"\n• \"Change gradient to purple\"",
+        "Heyyyy, I'm Fricty! 👋\n\nI'm your AI design assistant. I can help you modify content, change colors, rearrange sections, or add/remove components.",
     },
   ]);
   const [input, setInput] = useState("");
@@ -612,14 +612,14 @@ export default function AIGeneratedView() {
       (k) => variant[k as keyof WebsiteVariant] !== undefined
     ) ||
     JSON.stringify(visibleSections) !==
-      JSON.stringify(["hero", "features", "how-it-works"]);
+    JSON.stringify(["hero", "features", "how-it-works"]);
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-xl font-semibold flex items-center gap-2">
-            <Sparkles className="h-5 w-5 text-purple-600" />
+            <Sparkles className="h-5 w-5 text-[#1c1b1a]" />
             AI Generated
           </h2>
           <p className="text-muted-foreground text-sm mt-1">
@@ -629,7 +629,7 @@ export default function AIGeneratedView() {
         {hasChanges && (
           <button
             onClick={handleReset}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-md transition-colors"
+            className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-[#6f6e69] hover:text-[#1c1b1a] hover:bg-[#fffcf0] border border-transparent hover:border-[#e6e4d9] rounded-md transition-colors"
           >
             <RotateCcw className="w-4 h-4" />
             Reset
@@ -658,17 +658,18 @@ export default function AIGeneratedView() {
         </Card>
 
         {/* AI Generated Preview */}
-        <Card className="overflow-hidden border-purple-200">
-          <div className="p-3 border-b bg-purple-50 flex items-center justify-between">
-            <span className="text-sm font-medium text-purple-700">
+        <Card className="overflow-hidden border-[#e6e4d9] gap-0 py-0">
+          <div className="p-3 border-b bg-[#fffcf0] flex items-center justify-between">
+            <span className="text-sm font-medium text-[#1c1b1a] flex items-center gap-2">
+              <Sparkles className="h-4 w-4" />
               AI Generated
               {hasChanges && (
-                <span className="ml-2 text-xs bg-purple-200 px-2 py-0.5 rounded-full">
+                <span className="ml-1 text-xs bg-[#1c1b1a] text-[#f2f0e5] px-2 py-0.5 rounded-full">
                   Modified
                 </span>
               )}
             </span>
-            <span className="text-xs text-purple-500">
+            <span className="text-xs text-[#6f6e69]">
               Hover sections to drag or remove
             </span>
           </div>
@@ -695,13 +696,13 @@ export default function AIGeneratedView() {
 
       {/* Hidden Sections Bar */}
       {hiddenSections.length > 0 && (
-        <div className="flex items-center gap-2 p-3 bg-gray-50 border border-gray-200 rounded-lg">
-          <span className="text-sm text-gray-600">Hidden sections:</span>
+        <div className="flex items-center gap-2 p-3 bg-[#fffcf0] border border-[#e6e4d9] rounded-lg">
+          <span className="text-sm text-[#6f6e69]">Hidden sections:</span>
           {hiddenSections.map((sectionId) => (
             <button
               key={sectionId}
               onClick={() => handleAddSection(sectionId)}
-              className="flex items-center gap-1 px-2 py-1 text-xs bg-white border border-gray-300 rounded-md hover:bg-purple-50 hover:border-purple-300 hover:text-purple-700 transition-colors"
+              className="flex items-center gap-1 px-2 py-1 text-xs bg-white border border-[#e6e4d9] rounded-md hover:bg-[#1c1b1a] hover:text-[#f2f0e5] hover:border-[#1c1b1a] transition-colors"
             >
               <Plus className="w-3 h-3" />
               {SECTION_NAMES[sectionId]}
@@ -711,30 +712,28 @@ export default function AIGeneratedView() {
       )}
 
       {/* Chat Interface */}
-      <Card className="gap-0 py-0">
+      <Card className="gap-0 py-0 border-[#e6e4d9] bg-white">
         <CardContent className="p-4">
           <div className="space-y-4">
             {/* Chat Messages Area */}
-            <div className="h-48 border border-gray-200 rounded-lg p-3 bg-gray-50 overflow-y-auto">
+            <div className="h-48 overflow-y-auto pr-2">
               <div className="space-y-3">
                 {messages.map((message) => (
                   <div
                     key={message.id}
-                    className={`flex gap-2 ${
-                      message.role === "user" ? "justify-end" : "justify-start"
-                    }`}
+                    className={`flex gap-2 ${message.role === "user" ? "justify-end" : "justify-start"
+                      }`}
                   >
                     {message.role === "assistant" && (
-                      <div className="w-6 h-6 rounded-full bg-purple-100 flex items-center justify-center flex-shrink-0">
-                        <Bot className="w-4 h-4 text-purple-600" />
+                      <div className="flex-shrink-0 mt-1">
+                        <Bot className="w-4 h-4 text-[#1c1b1a]" />
                       </div>
                     )}
                     <div
-                      className={`max-w-[80%] rounded-lg px-3 py-2 text-sm whitespace-pre-wrap ${
-                        message.role === "user"
-                          ? "bg-purple-600 text-white"
-                          : "bg-white text-gray-900 border border-gray-200 shadow-sm"
-                      }`}
+                      className={`max-w-[85%] text-sm whitespace-pre-wrap ${message.role === "user"
+                        ? "rounded-lg px-3 py-2 bg-[#1c1b1a] text-[#f2f0e5]"
+                        : "text-[#1c1b1a] pt-1"
+                        }`}
                     >
                       {message.content}
                     </div>
@@ -747,11 +746,11 @@ export default function AIGeneratedView() {
                 ))}
                 {isLoading && (
                   <div className="flex gap-2 justify-start">
-                    <div className="w-6 h-6 rounded-full bg-purple-100 flex items-center justify-center flex-shrink-0">
-                      <Bot className="w-4 h-4 text-purple-600" />
+                    <div className="flex-shrink-0 mt-1">
+                      <Bot className="w-4 h-4 text-[#1c1b1a]" />
                     </div>
-                    <div className="bg-white text-gray-900 border border-gray-200 shadow-sm rounded-lg px-3 py-2">
-                      <Loader2 className="w-4 h-4 animate-spin text-purple-600" />
+                    <div className="pt-1">
+                      <Loader2 className="w-4 h-4 animate-spin text-[#1c1b1a]" />
                     </div>
                   </div>
                 )}
@@ -765,14 +764,14 @@ export default function AIGeneratedView() {
                 type="text"
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
-                placeholder="Try: 'Make it more modern' or 'Remove the features section'"
-                className="flex-1 px-3 py-2 text-sm border border-gray-300 rounded-lg bg-white text-gray-900 placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                placeholder="Ask me anything - 'Make it more modern', 'Remove hero', etc."
+                className="flex-1 px-3 py-2 text-sm border border-gray-300 rounded-lg bg-white text-gray-900 placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-[#1c1b1a]"
                 disabled={isLoading}
               />
               <button
                 type="submit"
                 disabled={isLoading || !input.trim()}
-                className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className="px-4 py-2 bg-[#1c1b1a] text-[#f2f0e5] rounded-lg hover:bg-[#343231] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <Send className="h-4 w-4" />
               </button>
@@ -866,14 +865,7 @@ function TestWebsiteVariant({
                 </div>
                 <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto max-w-md">
                   <a href="#features" className="inline-block w-full sm:w-auto">
-                    <button className="shadow-lg relative overflow-hidden group cursor-pointer w-full text-lg px-8 py-6 h-auto bg-[#1c1b1a] text-[#f2f0e5] rounded-md">
-                      <div className="absolute inset-0 opacity-0 group-hover:opacity-60 transition-opacity duration-300">
-                        <img
-                          src={uofthacksbg}
-                          alt="Background"
-                          className="object-cover"
-                        />
-                      </div>
+                    <button className="relative overflow-hidden cursor-pointer w-full text-lg px-8 py-6 h-auto bg-[#1c1b1a] text-[#f2f0e5] rounded-md hover:bg-[#343231] transition-colors shadow-md">
                       <span className="relative z-10">
                         {variant.primaryButtonText || "Get Started"}
                       </span>
@@ -883,14 +875,7 @@ function TestWebsiteVariant({
                     href="#how-it-works"
                     className="inline-block w-full sm:w-auto"
                   >
-                    <button className="shadow-lg relative overflow-hidden group cursor-pointer w-full text-lg px-8 py-6 h-auto border border-[#e6e4d9] bg-[#fffcf0] text-[#1c1b1a] rounded-md">
-                      <div className="absolute inset-0 opacity-0 group-hover:opacity-60 transition-opacity duration-300">
-                        <img
-                          src={uofthacksbg}
-                          alt="Background"
-                          className="object-cover"
-                        />
-                      </div>
+                    <button className="relative overflow-hidden cursor-pointer w-full text-lg px-8 py-6 h-auto border border-[#e6e4d9] bg-[#fffcf0] text-[#1c1b1a] rounded-md hover:bg-[#f2f0e5] transition-colors shadow-md">
                       <span className="relative z-10">
                         {variant.secondaryButtonText || "View Demo"}
                       </span>

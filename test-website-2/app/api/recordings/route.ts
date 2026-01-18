@@ -3,8 +3,42 @@ import { writeFile, readdir, readFile, mkdir } from 'fs/promises'
 import { existsSync } from 'fs'
 import path from 'path'
 
-// Path to recordings directory (relative to project root)
-const RECORDINGS_DIR = path.join(process.cwd(), '..', 'output', 'recordings')
+// Path to recordings directory - try multiple locations to handle different working directories
+function getRecordingsDir(): string {
+  const possiblePaths = [
+    // Running from test-website folder: ../output/recordings
+    path.join(process.cwd(), '..', 'output', 'recordings'),
+    // Running from monorepo root via turbo: output/recordings  
+    path.join(process.cwd(), 'output', 'recordings'),
+    // Explicit path as fallback
+    path.resolve('C:/Users/Kostiantyn/Startup/output/recordings'),
+  ]
+
+  for (const p of possiblePaths) {
+    if (existsSync(p)) {
+      console.log('[API] Using recordings directory:', p)
+      return p
+    }
+  }
+
+  // Default to first path if none exist (will be created)
+  console.log('[API] No existing recordings dir found, will create:', possiblePaths[0])
+  return possiblePaths[0]
+}
+
+const RECORDINGS_DIR = getRecordingsDir()
+
+// CORS headers for cross-origin requests
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type',
+}
+
+// Handle OPTIONS requests for CORS preflight
+export async function OPTIONS() {
+  return NextResponse.json({}, { headers: corsHeaders })
+}
 
 // Ensure recordings directory exists
 async function ensureRecordingsDir() {
@@ -21,8 +55,9 @@ export async function POST(request: NextRequest) {
     const recording = await request.json()
     const { sessionId, version } = recording
 
-    // Create filename with version and sessionId (stable name to allow updates)
-    const filename = `${version}_${sessionId}.json`
+    // Create filename with version and timestamp
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-')
+    const filename = `${version}_${timestamp}_${sessionId}.json`
     const filepath = path.join(RECORDINGS_DIR, filename)
 
     // Save recording to file
@@ -34,12 +69,12 @@ export async function POST(request: NextRequest) {
       success: true,
       filename,
       path: filepath
-    })
+    }, { headers: corsHeaders })
   } catch (error) {
     console.error('[API] Error saving recording:', error)
     return NextResponse.json(
       { success: false, error: 'Failed to save recording' },
-      { status: 500 }
+      { status: 500, headers: corsHeaders }
     )
   }
 }
@@ -60,12 +95,12 @@ export async function GET(request: NextRequest) {
 
       if (file) {
         const content = await readFile(path.join(RECORDINGS_DIR, file), 'utf-8')
-        return NextResponse.json(JSON.parse(content))
+        return NextResponse.json(JSON.parse(content), { headers: corsHeaders })
       }
 
       return NextResponse.json(
         { error: 'Recording not found' },
-        { status: 404 }
+        { status: 404, headers: corsHeaders }
       )
     }
 
@@ -97,12 +132,12 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({
       recordings: recordings.filter(Boolean).sort((a, b) => b!.startTime - a!.startTime)
-    })
+    }, { headers: corsHeaders })
   } catch (error) {
     console.error('[API] Error fetching recordings:', error)
     return NextResponse.json(
       { success: false, error: 'Failed to fetch recordings' },
-      { status: 500 }
+      { status: 500, headers: corsHeaders }
     )
   }
 }

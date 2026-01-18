@@ -1,6 +1,6 @@
 'use client'
 
-import { record, EventType } from 'rrweb'
+import { record } from 'rrweb'
 
 export interface SessionRecording {
   sessionId: string
@@ -62,7 +62,7 @@ class SessionRecorder {
       sampling: {
         scroll: 150,
         input: 'last',
-        mousemove: true,
+        mousemove: false,
       },
     })
 
@@ -124,7 +124,7 @@ class SessionRecorder {
     }
 
     try {
-      const response = await fetch('http://localhost:3001/api/recordings', {
+      const response = await fetch('/api/recordings', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
