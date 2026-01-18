@@ -37,15 +37,11 @@ export default function PairedOverviewView() {
         {/* Key Metrics Comparison */}
         <div className="grid grid-cols-2 gap-6">
           {/* Version A */}
-          <Card>
-            <div className="p-4 border-b bg-muted/30">
-              <div className="flex items-center gap-3">
-                <div className="w-3 h-3 bg-black rounded-full"></div>
-                <div>
-                  <h3 className="font-semibold">Version A (Original)</h3>
-                  <p className="text-xs text-muted-foreground">Control Group</p>
-                </div>
-              </div>
+          <Card className="gap-0 py-0 overflow-hidden">
+            <div className="p-3 border-b bg-muted/50 flex items-center gap-2">
+              <div className="w-2 h-2 bg-black rounded-full"></div>
+              <span className="text-sm font-medium">Version A (Original)</span>
+              <span className="text-xs text-muted-foreground">Control</span>
             </div>
             <CardContent className="p-6 space-y-4">
               <div className="pb-4 border-b">
@@ -68,15 +64,11 @@ export default function PairedOverviewView() {
           </Card>
 
           {/* Version B */}
-          <Card>
-            <div className="p-4 border-b bg-blue-50/50">
-              <div className="flex items-center gap-3">
-                <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
-                <div>
-                  <h3 className="font-semibold">Version B (Generated)</h3>
-                  <p className="text-xs text-muted-foreground">Variant Group</p>
-                </div>
-              </div>
+          <Card className="gap-0 py-0 overflow-hidden">
+            <div className="p-3 border-b bg-blue-50/50 flex items-center gap-2">
+              <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+              <span className="text-sm font-medium">Version B (Generated)</span>
+              <span className="text-xs text-muted-foreground">Variant</span>
             </div>
             <CardContent className="p-6 space-y-4">
               <div className="pb-4 border-b">
@@ -101,21 +93,21 @@ export default function PairedOverviewView() {
 
         {/* Experiment Summary */}
         <div className="grid grid-cols-3 gap-4 mt-6">
-          <Card>
+          <Card className="gap-0 py-0">
             <CardContent className="p-6 text-center">
               <div className="text-xs text-muted-foreground mb-2">Statistical Significance</div>
               <div className="text-2xl font-bold mb-1">--</div>
               <div className="text-xs text-muted-foreground">Confidence level</div>
             </CardContent>
           </Card>
-          <Card>
+          <Card className="gap-0 py-0">
             <CardContent className="p-6 text-center">
               <div className="text-xs text-muted-foreground mb-2">Total Participants</div>
               <div className="text-2xl font-bold mb-1">--</div>
               <div className="text-xs text-muted-foreground">Users tested</div>
             </CardContent>
           </Card>
-          <Card>
+          <Card className="gap-0 py-0">
             <CardContent className="p-6 text-center">
               <div className="text-xs text-muted-foreground mb-2">Experiment Duration</div>
               <div className="text-2xl font-bold mb-1">--</div>
@@ -125,7 +117,7 @@ export default function PairedOverviewView() {
         </div>
 
         {/* Status Message */}
-        <Card className="bg-muted/30 mt-6">
+        <Card className="bg-muted/30 mt-6 gap-0 py-0">
           <CardContent className="p-4 text-center">
             <p className="text-sm text-muted-foreground">
               Connect Amplitude SDK to see live experiment data

@@ -22,10 +22,30 @@ export function useRecordingsList(version?: string) {
 
   useEffect(() => {
     refetch()
+    
     // Auto-refresh every 10 seconds
     const interval = setInterval(refetch, 10000)
-    return () => clearInterval(interval)
-  }, [refetch])
+    
+    // Listen for recording saved events to refresh immediately
+    const handleRecordingSaved = (event: CustomEvent) => {
+      const { version: savedVersion } = event.detail
+      if (!version || version === savedVersion) {
+        console.log(`[useRecordingsList] Recording saved for version ${savedVersion}, refreshing...`)
+        refetch()
+      }
+    }
+    
+    if (typeof window !== 'undefined') {
+      window.addEventListener('sessionRecordingSaved', handleRecordingSaved as EventListener)
+    }
+    
+    return () => {
+      clearInterval(interval)
+      if (typeof window !== 'undefined') {
+        window.removeEventListener('sessionRecordingSaved', handleRecordingSaved as EventListener)
+      }
+    }
+  }, [refetch, version])
 
   return { data, isLoading, error, refetch }
 }

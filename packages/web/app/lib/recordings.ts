@@ -33,7 +33,10 @@ export async function fetchRecordingsList(version?: string): Promise<RecordingMe
     }
     
     const data = await response.json()
-    return data.recordings || []
+    const recordings = data.recordings || []
+    
+    // Sort by startTime descending (most recent first)
+    return recordings.sort((a: RecordingMetadata, b: RecordingMetadata) => b.startTime - a.startTime)
   } catch (error) {
     console.error('Error fetching recordings:', error)
     return []

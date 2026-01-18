@@ -640,8 +640,9 @@ export default function AIGeneratedView() {
       {/* Side by Side Preview */}
       <div className="grid grid-cols-2 gap-4">
         {/* Original Website */}
-        <Card className="overflow-hidden">
-          <div className="p-3 border-b bg-muted/50">
+        <Card className="overflow-hidden gap-0 py-0">
+          <div className="p-3 border-b bg-muted/50 flex items-center gap-2">
+            <div className="w-2 h-2 bg-black rounded-full"></div>
             <span className="text-sm font-medium">Original</span>
           </div>
           <CardContent className="p-0">
@@ -710,7 +711,7 @@ export default function AIGeneratedView() {
       )}
 
       {/* Chat Interface */}
-      <Card>
+      <Card className="gap-0 py-0">
         <CardContent className="p-4">
           <div className="space-y-4">
             {/* Chat Messages Area */}
