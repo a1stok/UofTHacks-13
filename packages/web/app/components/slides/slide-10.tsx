@@ -2,6 +2,7 @@
 
 import { motion } from "motion/react";
 import { ArrowRight } from "lucide-react";
+import { NavLink } from "react-router";
 
 export default function Slide10() {
   return (
@@ -45,8 +46,7 @@ export default function Slide10() {
           transition={{ duration: 0.6, delay: 0.1 }}
           className="text-6xl tracking-tight mb-6"
         >
-          Every user is{" "}
-          <span className="text-mypage">unique</span>.
+          Every user is <span className="text-mypage">unique</span>.
         </motion.h1>
 
         {/* Subheadline */}
@@ -74,9 +74,9 @@ export default function Slide10() {
           transition={{ duration: 0.6, delay: 0.5 }}
           className="text-lg text-muted-foreground mb-12 max-w-2xl mx-auto"
         >
-          Frictionless learns from every click, every scroll, every moment of hesitation.
-          Then it evolves your product—automatically—so each user gets the interface
-          they deserve.
+          Frictionless learns from every click, every scroll, every moment of
+          hesitation. Then it evolves your product—automatically—so each user
+          gets the interface they deserve.
         </motion.p>
 
         {/* CTA catchphrase */}
@@ -87,32 +87,32 @@ export default function Slide10() {
           className="mb-12"
         >
           <span className="text-3xl tracking-tight">
-            What will{" "}
-            <span className="text-mypage">your product</span>
-            {" "}become?
+            What will <span className="text-mypage">your product</span> become?
           </span>
         </motion.div>
 
         {/* CTA Button */}
-        <motion.div
-          initial={{ opacity: 0, scale: 0.9 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.5, delay: 0.9 }}
-        >
-          <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.98 }}
-            className="group inline-flex items-center gap-3 px-8 py-4 bg-mypage text-white rounded-full text-lg font-medium shadow-lg shadow-mypage/25 hover:shadow-xl hover:shadow-mypage/30 transition-shadow"
+        <NavLink to="/dashboard">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.5, delay: 0.9 }}
           >
-            Start building
-            <motion.span
-              animate={{ x: [0, 4, 0] }}
-              transition={{ duration: 1.5, repeat: Infinity }}
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.98 }}
+              className="group inline-flex items-center gap-3 px-8 py-4 bg-mypage text-white rounded-full text-lg font-medium shadow-lg shadow-mypage/25 hover:shadow-xl hover:shadow-mypage/30 transition-shadow"
             >
-              <ArrowRight className="size-5" />
-            </motion.span>
-          </motion.button>
-        </motion.div>
+              Start building
+              <motion.span
+                animate={{ x: [0, 4, 0] }}
+                transition={{ duration: 1.5, repeat: Infinity }}
+              >
+                <ArrowRight className="size-5" />
+              </motion.span>
+            </motion.button>
+          </motion.div>
+        </NavLink>
 
         {/* Bottom tagline */}
         <motion.div
@@ -149,13 +149,19 @@ export default function Slide10() {
           >
             <motion.div
               animate={{ y: [0, -8, 0] }}
-              transition={{ duration: 3 + i * 0.5, repeat: Infinity, ease: "easeInOut" }}
+              transition={{
+                duration: 3 + i * 0.5,
+                repeat: Infinity,
+                ease: "easeInOut",
+              }}
               className="flex flex-col items-center gap-1"
             >
               <div className="size-10 rounded-full bg-gradient-to-br from-mypage/30 to-mypage/10 border border-mypage/20 flex items-center justify-center text-xs font-medium text-mypage/70">
                 {pos.label[0]}
               </div>
-              <span className="text-[10px] text-muted-foreground/50">{pos.label}</span>
+              <span className="text-[10px] text-muted-foreground/50">
+                {pos.label}
+              </span>
             </motion.div>
           </motion.div>
         ))}

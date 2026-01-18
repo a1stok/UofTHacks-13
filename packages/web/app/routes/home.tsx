@@ -1,8 +1,7 @@
 import { ArrowRight, ChartArea, LayoutTemplate, SmileIcon } from "lucide-react";
-import type { Route } from "./+types/home";
-export function meta({}: Route.MetaArgs) {
+export function meta({}) {
   return [
-    { title: "MyPage" },
+    { title: "Frictionless" },
     { name: "description", content: "Welcome to My Page" },
   ];
 }
