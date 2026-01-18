@@ -4,10 +4,20 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 
 export default function Home() {
   return (
-    <main className="min-h-screen bg-gradient-to-br from-background to-secondary">
+    <main className="min-h-screen bg-red-500">
       {/* Hero Section */}
       <section className="container mx-auto px-4 py-8">
         <div className="flex flex-col items-center text-center gap-6">
+          {/* Title */}
+          <div className="space-y-2 max-w-4xl">
+            <h1 className="text-4xl md:text-6xl font-bold text-foreground">
+              Frictionless
+            </h1>
+            <p className="text-xl md:text-2xl text-muted-foreground">
+              Turn behavioral events into AI-powered UX insights that automatically improve your product
+            </p>
+          </div>
+          
           {/* Logo */}
           <div className="relative w-80 h-80 md:w-96 md:h-96 drop-shadow-2xl rounded-xl overflow-hidden">
             <Image
@@ -18,50 +28,24 @@ export default function Home() {
               priority
             />
           </div>
-          
-          {/* Title */}
-          <div className="space-y-2 max-w-4xl">
-            <h1 className="text-4xl md:text-6xl font-bold text-foreground">
-              Frictionless
-            </h1>
-            <p className="text-xl md:text-2xl text-muted-foreground">
-              Turn behavioral events into AI-powered UX insights that automatically improve your product
-            </p>
-          </div>
 
           {/* CTA Buttons */}
           <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto max-w-md">
             <a href="#features" className="inline-block w-full sm:w-auto">
               <Button 
                 size="lg" 
-                className="shadow-lg relative overflow-hidden group cursor-pointer w-full text-lg px-8 py-6 h-auto"
+                className="bg-black text-white hover:bg-gray-800 shadow-lg cursor-pointer w-full text-lg px-8 py-6 h-auto"
               >
-                <div className="absolute inset-0 opacity-0 group-hover:opacity-60 transition-opacity duration-300">
-                  <Image
-                    src="/UofTHacksBg.png"
-                    alt="Background"
-                    fill
-                    className="object-cover"
-                  />
-                </div>
-                <span className="relative z-10">Get Started</span>
+                Get Started
               </Button>
             </a>
             <a href="#how-it-works" className="inline-block w-full sm:w-auto">
               <Button 
                 variant="outline" 
                 size="lg" 
-                className="shadow-lg relative overflow-hidden group cursor-pointer w-full text-lg px-8 py-6 h-auto"
+                className="bg-white text-black border-white hover:bg-gray-100 shadow-lg cursor-pointer w-full text-lg px-8 py-6 h-auto"
               >
-                <div className="absolute inset-0 opacity-0 group-hover:opacity-60 transition-opacity duration-300">
-                  <Image
-                    src="/UofTHacksBg.png"
-                    alt="Background"
-                    fill
-                    className="object-cover"
-                  />
-                </div>
-                <span className="relative z-10">View Demo</span>
+                View Demo
               </Button>
             </a>
           </div>
@@ -72,7 +56,7 @@ export default function Home() {
       <section id="features" className="container mx-auto px-4 py-8">
         <div className="max-w-6xl mx-auto">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <Card className="shadow-lg hover:shadow-xl transition-shadow">
+          <Card className="bg-white shadow-lg hover:shadow-xl transition-shadow">
             <CardHeader className="p-6 pb-3">
               <CardTitle className="text-2xl">Behavioral Event Tracking</CardTitle>
               <CardDescription className="text-sm">
@@ -86,7 +70,7 @@ export default function Home() {
             </CardContent>
           </Card>
 
-          <Card className="shadow-lg hover:shadow-xl transition-shadow">
+          <Card className="bg-white shadow-lg hover:shadow-xl transition-shadow">
             <CardHeader className="p-6 pb-3">
               <CardTitle className="text-2xl">AI-Powered Insights</CardTitle>
               <CardDescription className="text-sm">
@@ -100,7 +84,7 @@ export default function Home() {
             </CardContent>
           </Card>
 
-          <Card className="shadow-lg hover:shadow-xl transition-shadow">
+          <Card className="bg-white shadow-lg hover:shadow-xl transition-shadow">
             <CardHeader className="p-6 pb-3">
               <CardTitle className="text-2xl">Self-Improving Product</CardTitle>
               <CardDescription className="text-sm">
@@ -120,7 +104,7 @@ export default function Home() {
       {/* Project Details */}
       <section id="how-it-works" className="container mx-auto px-4 py-8">
         <div className="max-w-6xl mx-auto">
-          <Card className="shadow-xl">
+          <Card className="bg-white shadow-xl">
             <CardHeader className="text-center pb-3 p-4">
               <CardTitle className="text-2xl mb-1">The Amplitude-Style Loop</CardTitle>
               <CardDescription className="text-base">

@@ -96,6 +96,34 @@ export interface AggregatedFlowStats {
     exitPoints: { name: string; count: number; percentage: number }[]
 }
 
+export interface AggregatedFlowAnalysis {
+    // Aggregated totals (sum across all sessions)
+    totalClicks: number
+    totalScrolls: number
+    totalInputs: number
+    totalMouseMoves: number
+    totalFocusEvents: number
+    totalMutations: number
+    // Averages
+    avgClicks: number
+    avgScrolls: number
+    avgInputs: number
+    avgMouseMoves: number
+    avgFocusEvents: number
+    avgMutations: number
+    avgScrollDepth: number
+    avgSessionDuration: number
+    avgTimeToFirstClick: number
+    avgTimeToFirstScroll: number
+    // Engagement
+    avgEngagementScore: number
+    totalEngagementScore: number
+    // Other
+    maxScrollDepth: number
+    viewport: { width: number; height: number }
+    totalSessions: number
+}
+
 /**
  * Analyze a single recording to extract flow data
  */
@@ -335,6 +363,72 @@ export function aggregateFlowStats(recordings: RecordingMetadata[], recordingDet
 }
 
 /**
+ * Aggregate flow analysis from multiple recordings into a single aggregated view
+ */
+export function aggregateFlowAnalysis(recordings: Recording[]): AggregatedFlowAnalysis | null {
+    if (recordings.length === 0) return null;
+
+    const analyses = recordings.map(analyzeRecording);
+    const totalSessions = analyses.length;
+
+    // Sum all metrics
+    const totalClicks = analyses.reduce((sum, a) => sum + a.totalClicks, 0);
+    const totalScrolls = analyses.reduce((sum, a) => sum + a.totalScrolls, 0);
+    const totalInputs = analyses.reduce((sum, a) => sum + a.totalInputs, 0);
+    const totalMouseMoves = analyses.reduce((sum, a) => sum + a.totalMouseMoves, 0);
+    const totalFocusEvents = analyses.reduce((sum, a) => sum + a.totalFocusEvents, 0);
+    const totalMutations = analyses.reduce((sum, a) => sum + a.totalMutations, 0);
+    const totalEngagementScore = analyses.reduce((sum, a) => sum + a.engagementScore, 0);
+    const totalScrollDepth = analyses.reduce((sum, a) => sum + a.maxScrollDepth, 0);
+    const totalSessionDuration = analyses.reduce((sum, a) => sum + a.sessionDuration, 0);
+    const totalTimeToFirstClick = analyses.reduce((sum, a) => sum + a.timeToFirstClick, 0);
+    const totalTimeToFirstScroll = analyses.reduce((sum, a) => sum + a.timeToFirstScroll, 0);
+
+    // Calculate averages
+    const avgClicks = totalClicks / totalSessions;
+    const avgScrolls = totalScrolls / totalSessions;
+    const avgInputs = totalInputs / totalSessions;
+    const avgMouseMoves = totalMouseMoves / totalSessions;
+    const avgFocusEvents = totalFocusEvents / totalSessions;
+    const avgMutations = totalMutations / totalSessions;
+    const avgEngagementScore = totalEngagementScore / totalSessions;
+    const avgScrollDepth = totalScrollDepth / totalSessions;
+    const avgSessionDuration = totalSessionDuration / totalSessions;
+    const avgTimeToFirstClick = totalTimeToFirstClick / totalSessions;
+    const avgTimeToFirstScroll = totalTimeToFirstScroll / totalSessions;
+
+    // Find max scroll depth
+    const maxScrollDepth = Math.max(...analyses.map(a => a.maxScrollDepth));
+
+    // Use viewport from first recording (assuming they're similar)
+    const viewport = analyses[0]?.viewport || { width: 0, height: 0 };
+
+    return {
+        totalClicks,
+        totalScrolls,
+        totalInputs,
+        totalMouseMoves,
+        totalFocusEvents,
+        totalMutations,
+        avgClicks,
+        avgScrolls,
+        avgInputs,
+        avgMouseMoves,
+        avgFocusEvents,
+        avgMutations,
+        avgScrollDepth,
+        avgSessionDuration,
+        avgTimeToFirstClick,
+        avgTimeToFirstScroll,
+        avgEngagementScore: Math.round(avgEngagementScore),
+        totalEngagementScore,
+        maxScrollDepth,
+        viewport,
+        totalSessions
+    };
+}
+
+/**
  * Extract a friendly page name from URL
  */
 function extractPageName(url: string): string {
@@ -363,9 +457,113 @@ export function formatFlowDuration(ms: number): string {
     return `${minutes}m ${remainingSeconds}s`
 }
 
+
 /**
  * Format milliseconds to seconds with 1 decimal
  */
 export function formatMs(ms: number): string {
     return `${(ms / 1000).toFixed(1)}s`
+}
+
+export interface UXInsight {
+    type: 'success' | 'warning' | 'critical'
+    title: string
+    description: string
+    impact: string
+}
+
+/**
+ * Generate AI-style UX insights based on flow analysis metrics
+ */
+export function generateUXInsights(
+    aggregated: AggregatedFlowAnalysis | FlowAnalysis,
+    single?: FlowAnalysis
+): UXInsight[] {
+    const insights: UXInsight[] = []
+    
+    // Use aggregated data for metrics, but single session for detailed analysis if available
+    const isAggregated = 'totalSessions' in aggregated
+    const timeToFirstClick = isAggregated ? aggregated.avgTimeToFirstClick : aggregated.timeToFirstClick
+    const maxScrollDepth = isAggregated ? aggregated.maxScrollDepth : aggregated.maxScrollDepth
+    const totalClicks = isAggregated ? aggregated.totalClicks : aggregated.totalClicks
+    const totalInputs = isAggregated ? aggregated.totalInputs : aggregated.totalInputs
+    const avgEngagementScore = isAggregated ? aggregated.avgEngagementScore : aggregated.engagementScore
+    const avgScrollSpeed = single?.avgScrollSpeed || 0
+    const avgTimeBetweenClicks = single?.avgTimeBetweenClicks || 0
+    const exitType = single?.exitType || (avgEngagementScore >= 60 ? 'completed' : avgEngagementScore >= 30 ? 'unknown' : 'abandoned')
+
+    // 1. Analyze Landing Experience (First 5s)
+    if (timeToFirstClick > 5000 && maxScrollDepth < 200) {
+        insights.push({
+            type: 'warning',
+            title: 'Slow Initial Engagement',
+            description: 'User spent over 5s without interacting or scrolling significantly. The hero section might not be compelling enough.',
+            impact: 'Risk of Bounce'
+        })
+    } else if (timeToFirstClick < 2000) {
+        insights.push({
+            type: 'success',
+            title: 'Strong Hook',
+            description: 'User interacted almost immediately (<2s). The primary Call-to-Action is clear and visible.',
+            impact: 'High Conversion'
+        })
+    }
+
+    // 2. Analyze Scroll & Content Consumption
+    if (maxScrollDepth > 1000 && avgScrollSpeed > 50) {
+        insights.push({
+            type: 'warning',
+            title: 'Skimming Detected',
+            description: 'User scrolled deep but quickly. They are scanning for specific information but not reading details.',
+            impact: 'Missed Info'
+        })
+    } else if (maxScrollDepth > 800 && totalClicks === 0) {
+        insights.push({
+            type: 'critical',
+            title: 'High Interest, No Action',
+            description: 'User consumed a lot of content (800px+) but did not click anything. Consider adding a sticky CTA or repeating buttons.',
+            impact: 'Lost Lead'
+        })
+    }
+
+    // 3. Form & Interaction Friction
+    if (totalInputs > 0 && exitType === 'abandoned') {
+        insights.push({
+            type: 'critical',
+            title: 'Form Abandonment',
+            description: 'User started filling out a form but left. The form might be too long or ask for sensitive info too early.',
+            impact: 'High Drop-off'
+        })
+    }
+
+    // 4. Rage Clicks / Frustration (Proxy: High click density)
+    if (totalClicks > 5 && avgTimeBetweenClicks < 500 && avgTimeBetweenClicks > 0) {
+        insights.push({
+            type: 'warning',
+            title: 'Frustration Signals',
+            description: 'Rapid clicking detected. User might be clicking on non-interactive elements or experiencing lag.',
+            impact: 'UX Friction'
+        })
+    }
+
+    // Default insight if no signals found
+    if (insights.length === 0) {
+        if (exitType === 'completed') {
+            insights.push({
+                type: 'success',
+                title: 'Smooth Journey',
+                description: 'User navigated through the flow effectively with standard engagement patterns.',
+                impact: 'Good Flow'
+            })
+        } else {
+            insights.push({
+                type: 'warning',
+                title: 'Passive Browsing',
+                description: 'User browsed briefly and left without significant interaction signals.',
+                impact: 'Low Engagement'
+            })
+        }
+    }
+
+    return insights
 }

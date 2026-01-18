@@ -39,8 +39,8 @@ const lightModeStyles: React.CSSProperties = {
 
 export function meta({ }: Route.MetaArgs) {
   return [
-    { title: "AI Generated - Website Generator" },
-    { name: "description", content: "Generate websites using AI" },
+    { title: "Frictionless" },
+    { name: "description", content: "Generate website variations for Frictionless using AI" },
   ];
 }
 
@@ -57,6 +57,9 @@ interface WebsiteVariant {
   secondaryButtonText?: string;
   gradientFrom?: string;
   gradientTo?: string;
+  backgroundColor?: string; // For solid background colors like red
+  swapPictureAndText?: boolean; // Swap image and text in hero
+  swapParagraphs?: boolean; // Swap paragraphs in features section
 }
 
 type SectionId = "hero" | "features" | "how-it-works";
@@ -77,393 +80,19 @@ interface AIResponse {
     add?: SectionId[];
     reorder?: SectionId[];
   };
+  targetServer?: 1 | 2 | "both"; // Which server to apply changes to
 }
 
-// Intelligent AI response generator
-function generateAIResponse(
+// TODO: Replace with actual AI API call
+async function generateAIResponse(
   userMessage: string,
   currentVariant: WebsiteVariant,
   currentSections: SectionId[]
-): AIResponse {
-  const lowerMessage = userMessage.toLowerCase();
-
-  // Remove section commands
-  const removeMatch = lowerMessage.match(
-    /remove|delete|hide|get rid of|take out/
-  );
-  if (removeMatch) {
-    const sectionsToRemove: SectionId[] = [];
-    if (
-      lowerMessage.includes("hero") ||
-      lowerMessage.includes("header") ||
-      lowerMessage.includes("top")
-    ) {
-      sectionsToRemove.push("hero");
-    }
-    if (
-      lowerMessage.includes("feature") ||
-      lowerMessage.includes("card") ||
-      lowerMessage.includes("middle")
-    ) {
-      sectionsToRemove.push("features");
-    }
-    if (
-      lowerMessage.includes("how") ||
-      lowerMessage.includes("work") ||
-      lowerMessage.includes("step") ||
-      lowerMessage.includes("loop") ||
-      lowerMessage.includes("bottom")
-    ) {
-      sectionsToRemove.push("how-it-works");
-    }
-
-    if (sectionsToRemove.length > 0) {
-      const removedNames = sectionsToRemove
-        .map((s) => SECTION_NAMES[s])
-        .join(", ");
-      return {
-        message: `Done! I've removed the ${removedNames} section${sectionsToRemove.length > 1 ? "s" : ""}. You can add ${sectionsToRemove.length > 1 ? "them" : "it"} back anytime by asking me or using the + button.`,
-        sectionChanges: { remove: sectionsToRemove },
-      };
-    }
-  }
-
-  // Add section commands
-  const addMatch = lowerMessage.match(/add|show|bring back|restore|include/);
-  if (addMatch) {
-    const sectionsToAdd: SectionId[] = [];
-    const removedSections = ALL_SECTIONS.filter(
-      (s) => !currentSections.includes(s)
-    );
-
-    if (
-      lowerMessage.includes("hero") ||
-      lowerMessage.includes("header") ||
-      lowerMessage.includes("top")
-    ) {
-      if (!currentSections.includes("hero")) sectionsToAdd.push("hero");
-    }
-    if (
-      lowerMessage.includes("feature") ||
-      lowerMessage.includes("card") ||
-      lowerMessage.includes("middle")
-    ) {
-      if (!currentSections.includes("features")) sectionsToAdd.push("features");
-    }
-    if (
-      lowerMessage.includes("how") ||
-      lowerMessage.includes("work") ||
-      lowerMessage.includes("step") ||
-      lowerMessage.includes("loop") ||
-      lowerMessage.includes("bottom")
-    ) {
-      if (!currentSections.includes("how-it-works"))
-        sectionsToAdd.push("how-it-works");
-    }
-    if (
-      lowerMessage.includes("all") ||
-      lowerMessage.includes("everything") ||
-      lowerMessage.includes("every section")
-    ) {
-      sectionsToAdd.push(...removedSections);
-    }
-
-    if (sectionsToAdd.length > 0) {
-      const addedNames = sectionsToAdd.map((s) => SECTION_NAMES[s]).join(", ");
-      return {
-        message: `I've added the ${addedNames} section${sectionsToAdd.length > 1 ? "s" : ""} back to your page.`,
-        sectionChanges: { add: sectionsToAdd },
-      };
-    }
-  }
-
-  // Reorder commands
-  const reorderMatch = lowerMessage.match(
-    /move|reorder|rearrange|swap|put .* (before|after|first|last|top|bottom)/
-  );
-  if (reorderMatch) {
-    let newOrder: SectionId[] = [...currentSections];
-
-    // Move hero to different positions
-    if (lowerMessage.includes("hero")) {
-      newOrder = newOrder.filter((s) => s !== "hero");
-      if (
-        lowerMessage.includes("last") ||
-        lowerMessage.includes("bottom") ||
-        lowerMessage.includes("end")
-      ) {
-        if (currentSections.includes("hero")) newOrder.push("hero");
-      } else if (
-        lowerMessage.includes("first") ||
-        lowerMessage.includes("top") ||
-        lowerMessage.includes("start")
-      ) {
-        if (currentSections.includes("hero")) newOrder.unshift("hero");
-      } else if (lowerMessage.includes("after feature")) {
-        const idx = newOrder.indexOf("features");
-        if (currentSections.includes("hero"))
-          newOrder.splice(idx + 1, 0, "hero");
-      }
-    }
-
-    // Move features
-    if (lowerMessage.includes("feature") && !lowerMessage.includes("hero")) {
-      newOrder = newOrder.filter((s) => s !== "features");
-      if (
-        lowerMessage.includes("last") ||
-        lowerMessage.includes("bottom") ||
-        lowerMessage.includes("end")
-      ) {
-        if (currentSections.includes("features")) newOrder.push("features");
-      } else if (
-        lowerMessage.includes("first") ||
-        lowerMessage.includes("top") ||
-        lowerMessage.includes("start")
-      ) {
-        if (currentSections.includes("features")) newOrder.unshift("features");
-      }
-    }
-
-    // Move how-it-works
-    if (
-      (lowerMessage.includes("how") || lowerMessage.includes("step")) &&
-      !lowerMessage.includes("hero") &&
-      !lowerMessage.includes("feature")
-    ) {
-      newOrder = newOrder.filter((s) => s !== "how-it-works");
-      if (
-        lowerMessage.includes("first") ||
-        lowerMessage.includes("top") ||
-        lowerMessage.includes("start")
-      ) {
-        if (currentSections.includes("how-it-works"))
-          newOrder.unshift("how-it-works");
-      } else if (lowerMessage.includes("after hero")) {
-        const idx = newOrder.indexOf("hero");
-        if (currentSections.includes("how-it-works"))
-          newOrder.splice(idx + 1, 0, "how-it-works");
-      } else {
-        if (currentSections.includes("how-it-works"))
-          newOrder.push("how-it-works");
-      }
-    }
-
-    if (JSON.stringify(newOrder) !== JSON.stringify(currentSections)) {
-      return {
-        message: `I've rearranged the sections. The new order is: ${newOrder.map((s) => SECTION_NAMES[s]).join(" → ")}.`,
-        sectionChanges: { reorder: newOrder },
-      };
-    }
-  }
-
-  // Reset command
-  if (
-    lowerMessage.includes("reset") ||
-    lowerMessage.includes("start over") ||
-    lowerMessage.includes("original")
-  ) {
-    return {
-      message:
-        "I've reset everything back to the original design. All sections are restored and styling is back to default.",
-      variant: {
-        heroTitle: undefined,
-        heroSubtitle: undefined,
-        primaryButtonText: undefined,
-        secondaryButtonText: undefined,
-        gradientFrom: undefined,
-        gradientTo: undefined,
-      },
-      sectionChanges: { reorder: ["hero", "features", "how-it-works"] },
-    };
-  }
-
-  // Style/content modifications
-  if (lowerMessage.includes("gradient") || lowerMessage.includes("color")) {
-    if (lowerMessage.includes("purple") || lowerMessage.includes("violet")) {
-      return {
-        message:
-          "I've updated the background with a rich purple gradient. This creates a more premium, modern feel.",
-        variant: {
-          gradientFrom: "from-purple-900",
-          gradientTo: "to-indigo-900",
-        },
-      };
-    }
-    if (lowerMessage.includes("blue")) {
-      return {
-        message:
-          "I've applied a professional blue gradient. Blue conveys trust and reliability.",
-        variant: {
-          gradientFrom: "from-blue-900",
-          gradientTo: "to-cyan-800",
-        },
-      };
-    }
-    if (lowerMessage.includes("dark") || lowerMessage.includes("black")) {
-      return {
-        message:
-          "I've applied a sleek dark gradient for a sophisticated, modern appearance.",
-        variant: {
-          gradientFrom: "from-gray-900",
-          gradientTo: "to-black",
-        },
-      };
-    }
-    if (lowerMessage.includes("green")) {
-      return {
-        message:
-          "I've added a fresh green gradient, great for conveying growth and sustainability.",
-        variant: {
-          gradientFrom: "from-emerald-900",
-          gradientTo: "to-teal-800",
-        },
-      };
-    }
-    return {
-      message:
-        "I've updated the background gradient to give it a more modern feel.",
-      variant: {
-        gradientFrom: "from-purple-900",
-        gradientTo: "to-indigo-900",
-      },
-    };
-  }
-
-  if (
-    lowerMessage.includes("hero") ||
-    lowerMessage.includes("title") ||
-    lowerMessage.includes("headline")
-  ) {
-    if (lowerMessage.includes("short") || lowerMessage.includes("minimal")) {
-      return {
-        message:
-          "I've made the hero more concise with a punchy headline that gets straight to the point.",
-        variant: {
-          heroTitle: "Frictionless UX",
-          heroSubtitle: "AI-powered insights. Automatic improvements.",
-        },
-      };
-    }
-    if (lowerMessage.includes("exciting") || lowerMessage.includes("bold")) {
-      return {
-        message:
-          "I've made the hero section more exciting with a bold, action-oriented headline!",
-        variant: {
-          heroTitle: "Supercharge Your Product!",
-          heroSubtitle:
-            "Watch your UX transform as AI detects friction and automatically optimizes every interaction.",
-        },
-      };
-    }
-    return {
-      message:
-        "I've updated the hero with a stronger value proposition that focuses on the key benefit.",
-      variant: {
-        heroTitle: "Transform Your UX with AI",
-        heroSubtitle:
-          "Automatically detect friction, understand user behavior, and improve your product—all powered by intelligent analytics.",
-      },
-    };
-  }
-
-  if (lowerMessage.includes("button") || lowerMessage.includes("cta")) {
-    if (lowerMessage.includes("urgent") || lowerMessage.includes("action")) {
-      return {
-        message:
-          "I've made the CTAs more urgent and action-oriented to increase conversions.",
-        variant: {
-          primaryButtonText: "Start Free Now",
-          secondaryButtonText: "See It In Action",
-        },
-      };
-    }
-    return {
-      message:
-        "I've optimized the CTAs with more engaging text that creates urgency.",
-      variant: {
-        primaryButtonText: "Start Free Trial",
-        secondaryButtonText: "Watch Demo",
-      },
-    };
-  }
-
-  if (lowerMessage.includes("modern") || lowerMessage.includes("minimal")) {
-    return {
-      message:
-        "I've applied a modern, minimal design with cleaner typography and a refined dark palette.",
-      variant: {
-        heroTitle: "Frictionless UX",
-        heroSubtitle: "AI-powered insights. Automatic improvements.",
-        gradientFrom: "from-slate-900",
-        gradientTo: "to-slate-800",
-        primaryButtonText: "Get Started",
-        secondaryButtonText: "Learn More",
-      },
-    };
-  }
-
-  if (lowerMessage.includes("professional") || lowerMessage.includes("corporate")) {
-    return {
-      message:
-        "I've refined the design with a more professional, corporate aesthetic.",
-      variant: {
-        heroTitle: "Enterprise-Grade UX Analytics",
-        heroSubtitle:
-          "Harness the power of AI to optimize user experiences at scale.",
-        gradientFrom: "from-slate-800",
-        gradientTo: "to-blue-900",
-        primaryButtonText: "Request Demo",
-        secondaryButtonText: "View Case Studies",
-      },
-    };
-  }
-
-  if (lowerMessage.includes("playful") || lowerMessage.includes("fun")) {
-    return {
-      message:
-        "I've made it more playful and engaging with a friendlier tone!",
-      variant: {
-        heroTitle: "Say Goodbye to UX Headaches!",
-        heroSubtitle:
-          "Let AI do the heavy lifting while you sit back and watch your product get better.",
-        gradientFrom: "from-pink-600",
-        gradientTo: "to-purple-700",
-        primaryButtonText: "Let's Go!",
-        secondaryButtonText: "Show Me How",
-      },
-    };
-  }
-
-  // Help / default response
-  const removedSections = ALL_SECTIONS.filter(
-    (s) => !currentSections.includes(s)
-  );
-  const removedInfo =
-    removedSections.length > 0
-      ? `\n\nCurrently hidden sections: ${removedSections.map((s) => SECTION_NAMES[s]).join(", ")}`
-      : "";
-
-  return {
-    message: `I can help you customize your website! Try asking me to:
-
-**Modify content:**
-• "Make the hero more exciting"
-• "Update the buttons to be more urgent"
-• "Make it look more professional"
-
-**Change colors:**
-• "Change gradient to purple/blue/dark/green"
-• "Make it more modern and minimal"
-
-**Rearrange sections:**
-• "Move features to the top"
-• "Put how it works before features"
-
-**Add/remove sections:**
-• "Remove the features section"
-• "Add back the hero"
-• "Reset to original"${removedInfo}`,
-  };
+): Promise<AIResponse> {
+  // This should call an actual AI API endpoint
+  // Example: const response = await fetch('/api/ai/generate', { ... })
+  // For now, return a placeholder response
+  throw new Error("AI integration not implemented. Please connect to an AI service.");
 }
 
 export default function AIGeneratedView() {
@@ -471,14 +100,21 @@ export default function AIGeneratedView() {
     {
       id: "welcome",
       role: "assistant",
-      content:
-        "Heyyyy, I'm Fricty! 👋\n\nI'm your AI design assistant. I can help you modify content, change colors, rearrange sections, or add/remove components.",
+        content:
+        "Heyyyy, I'm Fricty! 👋\n\nI'm your AI design assistant. I can help you modify content, change colors, rearrange sections, swap components, or add/remove components. By default, changes apply to the right side. Specify 'left' or 'right' to target a specific side.",
     },
   ]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [variant, setVariant] = useState<WebsiteVariant>({});
-  const [visibleSections, setVisibleSections] = useState<SectionId[]>([
+  // Separate state for each server
+  const [variant1, setVariant1] = useState<WebsiteVariant>({});
+  const [variant2, setVariant2] = useState<WebsiteVariant>({});
+  const [visibleSections1, setVisibleSections1] = useState<SectionId[]>([
+    "hero",
+    "features",
+    "how-it-works",
+  ]);
+  const [visibleSections2, setVisibleSections2] = useState<SectionId[]>([
     "hero",
     "features",
     "how-it-works",
@@ -486,8 +122,11 @@ export default function AIGeneratedView() {
   const [draggedSection, setDraggedSection] = useState<SectionId | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  const hiddenSections = ALL_SECTIONS.filter(
-    (s) => !visibleSections.includes(s)
+  const hiddenSections1 = ALL_SECTIONS.filter(
+    (s) => !visibleSections1.includes(s)
+  );
+  const hiddenSections2 = ALL_SECTIONS.filter(
+    (s) => !visibleSections2.includes(s)
   );
 
   const scrollToBottom = () => {
@@ -502,12 +141,29 @@ export default function AIGeneratedView() {
     setDraggedSection(sectionId);
   }, []);
 
-  const handleDragOver = useCallback(
+  const handleDragOver1 = useCallback(
     (e: React.DragEvent, targetId: SectionId) => {
       e.preventDefault();
       if (!draggedSection || draggedSection === targetId) return;
 
-      setVisibleSections((prev) => {
+      setVisibleSections1((prev) => {
+        const newOrder = [...prev];
+        const draggedIndex = newOrder.indexOf(draggedSection);
+        const targetIndex = newOrder.indexOf(targetId);
+        newOrder.splice(draggedIndex, 1);
+        newOrder.splice(targetIndex, 0, draggedSection);
+        return newOrder;
+      });
+    },
+    [draggedSection]
+  );
+
+  const handleDragOver2 = useCallback(
+    (e: React.DragEvent, targetId: SectionId) => {
+      e.preventDefault();
+      if (!draggedSection || draggedSection === targetId) return;
+
+      setVisibleSections2((prev) => {
         const newOrder = [...prev];
         const draggedIndex = newOrder.indexOf(draggedSection);
         const targetIndex = newOrder.indexOf(targetId);
@@ -523,23 +179,25 @@ export default function AIGeneratedView() {
     setDraggedSection(null);
   }, []);
 
-  const handleRemoveSection = useCallback((sectionId: SectionId) => {
-    setVisibleSections((prev) => prev.filter((s) => s !== sectionId));
-  }, []);
-
-  const handleAddSection = useCallback((sectionId: SectionId) => {
-    setVisibleSections((prev) => [...prev, sectionId]);
-  }, []);
-
-  const handleReset = useCallback(() => {
-    setVariant({});
-    setVisibleSections(["hero", "features", "how-it-works"]);
+  const handleReset = useCallback((server?: 1 | 2) => {
+    if (server === 1) {
+      setVariant1({});
+      setVisibleSections1(["hero", "features", "how-it-works"]);
+    } else if (server === 2) {
+      setVariant2({});
+      setVisibleSections2(["hero", "features", "how-it-works"]);
+    } else {
+      setVariant1({});
+      setVariant2({});
+      setVisibleSections1(["hero", "features", "how-it-works"]);
+      setVisibleSections2(["hero", "features", "how-it-works"]);
+    }
     setMessages((prev) => [
       ...prev,
       {
         id: Date.now().toString(),
         role: "assistant",
-        content: "Reset complete! Everything is back to the original design.",
+        content: "Reset complete!",
       },
     ]);
   }, []);
@@ -559,11 +217,9 @@ export default function AIGeneratedView() {
     setMessages((prev) => [...prev, userMsg]);
     setIsLoading(true);
 
-    // Simulate API delay
-    await new Promise((resolve) => setTimeout(resolve, 800 + Math.random() * 700));
-
     try {
-      const response = generateAIResponse(userMessage, variant, visibleSections);
+      // Call AI API to generate response
+      const response = await generateAIResponse(userMessage, variant1, visibleSections1);
 
       const assistantMsg: Message = {
         id: (Date.now() + 1).toString(),
@@ -572,27 +228,43 @@ export default function AIGeneratedView() {
       };
       setMessages((prev) => [...prev, assistantMsg]);
 
-      // Apply variant changes
+      const targetServer = response.targetServer || "both";
+
+      // Apply variant changes to appropriate server(s)
       if (response.variant) {
-        setVariant((prev) => ({ ...prev, ...response.variant }));
+        if (targetServer === 1 || targetServer === "both") {
+          setVariant1((prev) => ({ ...prev, ...response.variant }));
+        }
+        if (targetServer === 2 || targetServer === "both") {
+          setVariant2((prev) => ({ ...prev, ...response.variant }));
+        }
       }
 
-      // Apply section changes
+      // Apply section changes to appropriate server(s)
       if (response.sectionChanges) {
-        if (response.sectionChanges.reorder) {
-          setVisibleSections(response.sectionChanges.reorder);
-        } else {
-          if (response.sectionChanges.remove) {
-            setVisibleSections((prev) =>
-              prev.filter((s) => !response.sectionChanges!.remove!.includes(s))
-            );
+        const applyChanges = (setSections: React.Dispatch<React.SetStateAction<SectionId[]>>) => {
+          if (response.sectionChanges!.reorder) {
+            setSections(response.sectionChanges!.reorder);
+          } else {
+            if (response.sectionChanges!.remove) {
+              setSections((prev) =>
+                prev.filter((s) => !response.sectionChanges!.remove!.includes(s))
+              );
+            }
+            if (response.sectionChanges!.add) {
+              setSections((prev) => [
+                ...prev,
+                ...response.sectionChanges!.add!.filter((s) => !prev.includes(s)),
+              ]);
+            }
           }
-          if (response.sectionChanges.add) {
-            setVisibleSections((prev) => [
-              ...prev,
-              ...response.sectionChanges!.add!.filter((s) => !prev.includes(s)),
-            ]);
-          }
+        };
+
+        if (targetServer === 1 || targetServer === "both") {
+          applyChanges(setVisibleSections1);
+        }
+        if (targetServer === 2 || targetServer === "both") {
+          applyChanges(setVisibleSections2);
         }
       }
     } catch {
@@ -607,11 +279,18 @@ export default function AIGeneratedView() {
     }
   };
 
-  const hasChanges =
-    Object.keys(variant).some(
-      (k) => variant[k as keyof WebsiteVariant] !== undefined
+  const hasChanges1 =
+    Object.keys(variant1).some(
+      (k) => variant1[k as keyof WebsiteVariant] !== undefined
     ) ||
-    JSON.stringify(visibleSections) !==
+    JSON.stringify(visibleSections1) !==
+    JSON.stringify(["hero", "features", "how-it-works"]);
+  
+  const hasChanges2 =
+    Object.keys(variant2).some(
+      (k) => variant2[k as keyof WebsiteVariant] !== undefined
+    ) ||
+    JSON.stringify(visibleSections2) !==
     JSON.stringify(["hero", "features", "how-it-works"]);
 
   return (
@@ -623,55 +302,43 @@ export default function AIGeneratedView() {
             AI Generated
           </h2>
           <p className="text-muted-foreground text-sm mt-1">
-            Generate website variations using AI
+            Generate Frictionless website variations using AI
           </p>
         </div>
-        {hasChanges && (
+        {(hasChanges1 || hasChanges2) && (
           <button
-            onClick={handleReset}
+            onClick={() => handleReset()}
             className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-[#6f6e69] hover:text-[#1c1b1a] hover:bg-[#fffcf0] border border-transparent hover:border-[#e6e4d9] rounded-md transition-colors"
           >
             <RotateCcw className="w-4 h-4" />
-            Reset
+            Reset All
           </button>
         )}
       </div>
 
       {/* Side by Side Preview */}
       <div className="grid grid-cols-2 gap-4">
-        {/* Original Website */}
+        {/* Test Server 1 */}
         <Card className="overflow-hidden gap-0 py-0">
-          <div className="p-3 border-b bg-muted/50 flex items-center gap-2">
-            <div className="w-2 h-2 bg-black rounded-full"></div>
-            <span className="text-sm font-medium">Original</span>
-          </div>
-          <CardContent className="p-0">
-            <div className="h-[400px] overflow-hidden relative bg-[#fffcf0]">
-              <div
-                className="absolute inset-0 transform scale-[0.35] origin-top-left w-[285%] h-[285%] overflow-y-auto overflow-x-hidden"
-                style={lightModeStyles}
-              >
-                <TestWebsite />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* AI Generated Preview */}
-        <Card className="overflow-hidden border-[#e6e4d9] gap-0 py-0">
-          <div className="p-3 border-b bg-[#fffcf0] flex items-center justify-between">
-            <span className="text-sm font-medium text-[#1c1b1a] flex items-center gap-2">
-              <Sparkles className="h-4 w-4" />
-              AI Generated
-              {hasChanges && (
+          <div className="p-3 border-b bg-muted/50 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+              <span className="text-sm font-medium">Web Test 1</span>
+              {hasChanges1 && (
                 <span className="ml-1 text-xs bg-[#1c1b1a] text-[#f2f0e5] px-2 py-0.5 rounded-full">
                   Modified
                 </span>
               )}
-            </span>
-            <span className="text-xs text-[#6f6e69]">
-              Hover sections to drag or remove
-            </span>
+            </div>
+            {hasChanges1 && (
+              <button
+                onClick={() => handleReset(1)}
+                className="text-xs text-[#6f6e69] hover:text-[#1c1b1a] flex items-center gap-1"
+              >
+                <RotateCcw className="w-3 h-3" />
+                Reset
+              </button>
+            )}
           </div>
           <CardContent className="p-0">
             <div className="h-[400px] overflow-hidden relative bg-[#fffcf0]">
@@ -680,12 +347,54 @@ export default function AIGeneratedView() {
                 style={lightModeStyles}
               >
                 <TestWebsiteVariant
-                  variant={variant}
-                  sectionOrder={visibleSections}
+                  variant={variant1}
+                  sectionOrder={visibleSections1}
                   onDragStart={handleDragStart}
-                  onDragOver={handleDragOver}
+                  onDragOver={handleDragOver1}
                   onDragEnd={handleDragEnd}
-                  onRemove={handleRemoveSection}
+                  onRemove={(id) => setVisibleSections1((prev) => prev.filter((s) => s !== id))}
+                  draggedSection={draggedSection}
+                />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Test Server 2 */}
+        <Card className="overflow-hidden border-[#e6e4d9] gap-0 py-0">
+          <div className="p-3 border-b bg-[#fffcf0] flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+              <span className="text-sm font-medium text-[#1c1b1a]">Web Test 2</span>
+              {hasChanges2 && (
+                <span className="ml-1 text-xs bg-[#1c1b1a] text-[#f2f0e5] px-2 py-0.5 rounded-full">
+                  Modified
+                </span>
+              )}
+            </div>
+            {hasChanges2 && (
+              <button
+                onClick={() => handleReset(2)}
+                className="text-xs text-[#6f6e69] hover:text-[#1c1b1a] flex items-center gap-1"
+              >
+                <RotateCcw className="w-3 h-3" />
+                Reset
+              </button>
+            )}
+          </div>
+          <CardContent className="p-0">
+            <div className="h-[400px] overflow-hidden relative bg-[#fffcf0]">
+              <div
+                className="absolute inset-0 transform scale-[0.35] origin-top-left w-[285%] h-[285%] overflow-y-auto overflow-x-hidden"
+                style={lightModeStyles}
+              >
+                <TestWebsiteVariant
+                  variant={variant2}
+                  sectionOrder={visibleSections2}
+                  onDragStart={handleDragStart}
+                  onDragOver={handleDragOver2}
+                  onDragEnd={handleDragEnd}
+                  onRemove={(id) => setVisibleSections2((prev) => prev.filter((s) => s !== id))}
                   draggedSection={draggedSection}
                 />
               </div>
@@ -694,20 +403,39 @@ export default function AIGeneratedView() {
         </Card>
       </div>
 
-      {/* Hidden Sections Bar */}
-      {hiddenSections.length > 0 && (
-        <div className="flex items-center gap-2 p-3 bg-[#fffcf0] border border-[#e6e4d9] rounded-lg">
-          <span className="text-sm text-[#6f6e69]">Hidden sections:</span>
-          {hiddenSections.map((sectionId) => (
-            <button
-              key={sectionId}
-              onClick={() => handleAddSection(sectionId)}
-              className="flex items-center gap-1 px-2 py-1 text-xs bg-white border border-[#e6e4d9] rounded-md hover:bg-[#1c1b1a] hover:text-[#f2f0e5] hover:border-[#1c1b1a] transition-colors"
-            >
-              <Plus className="w-3 h-3" />
-              {SECTION_NAMES[sectionId]}
-            </button>
-          ))}
+      {/* Hidden Sections Bars */}
+      {(hiddenSections1.length > 0 || hiddenSections2.length > 0) && (
+        <div className="grid grid-cols-2 gap-4">
+          {hiddenSections1.length > 0 && (
+            <div className="flex items-center gap-2 p-3 bg-[#fffcf0] border border-[#e6e4d9] rounded-lg">
+              <span className="text-sm text-[#6f6e69]">Server 1 hidden:</span>
+              {hiddenSections1.map((sectionId) => (
+                <button
+                  key={sectionId}
+                  onClick={() => setVisibleSections1((prev) => [...prev, sectionId])}
+                  className="flex items-center gap-1 px-2 py-1 text-xs bg-white border border-[#e6e4d9] rounded-md hover:bg-[#1c1b1a] hover:text-[#f2f0e5] hover:border-[#1c1b1a] transition-colors"
+                >
+                  <Plus className="w-3 h-3" />
+                  {SECTION_NAMES[sectionId]}
+                </button>
+              ))}
+            </div>
+          )}
+          {hiddenSections2.length > 0 && (
+            <div className="flex items-center gap-2 p-3 bg-[#fffcf0] border border-[#e6e4d9] rounded-lg">
+              <span className="text-sm text-[#6f6e69]">Server 2 hidden:</span>
+              {hiddenSections2.map((sectionId) => (
+                <button
+                  key={sectionId}
+                  onClick={() => setVisibleSections2((prev) => [...prev, sectionId])}
+                  className="flex items-center gap-1 px-2 py-1 text-xs bg-white border border-[#e6e4d9] rounded-md hover:bg-[#1c1b1a] hover:text-[#f2f0e5] hover:border-[#1c1b1a] transition-colors"
+                >
+                  <Plus className="w-3 h-3" />
+                  {SECTION_NAMES[sectionId]}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
       )}
 
@@ -764,7 +492,7 @@ export default function AIGeneratedView() {
                 type="text"
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
-                placeholder="Ask me anything - 'Make it more modern', 'Remove hero', etc."
+                placeholder="Try: 'make background red', 'swap picture and text', 'swap paragraphs'"
                 className="flex-1 px-3 py-2 text-sm border border-gray-300 rounded-lg bg-white text-gray-900 placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-[#1c1b1a]"
                 disabled={isLoading}
               />
@@ -806,10 +534,27 @@ function TestWebsiteVariant({
   const uofthacks = "/UofTHacks.png";
   const uofthacksbg = "/UofTHacksBg.png";
 
-  const hasCustomGradient = variant.gradientFrom || variant.gradientTo;
-  const gradientClass = hasCustomGradient
-    ? `min-h-screen bg-gradient-to-br ${variant.gradientFrom || "from-[#fffcf0]"} ${variant.gradientTo || "to-[#f2f0e5]"}`
-    : "min-h-screen bg-gradient-to-br from-[#fffcf0] to-[#f2f0e5]";
+  // Determine background style
+  let backgroundClass = "min-h-screen";
+  if (variant.backgroundColor) {
+    // Solid background color
+    const colorMap: Record<string, string> = {
+      red: "bg-red-500",
+      blue: "bg-blue-500",
+      green: "bg-green-500",
+      yellow: "bg-yellow-500",
+      purple: "bg-purple-500",
+      black: "bg-black",
+      white: "bg-white",
+    };
+    backgroundClass += ` ${colorMap[variant.backgroundColor] || "bg-red-500"}`;
+  } else {
+    // Gradient background
+    const hasCustomGradient = variant.gradientFrom || variant.gradientTo;
+    backgroundClass += hasCustomGradient
+      ? ` bg-gradient-to-br ${variant.gradientFrom || "from-[#fffcf0]"} ${variant.gradientTo || "to-[#f2f0e5]"}`
+      : " bg-gradient-to-br from-[#fffcf0] to-[#f2f0e5]";
+  }
 
   const renderSection = (sectionId: SectionId) => {
     const isDragging = draggedSection === sectionId;
@@ -847,22 +592,45 @@ function TestWebsiteVariant({
             {toolbar}
             <section className="container mx-auto px-4 py-8">
               <div className="flex flex-col items-center text-center gap-6">
-                <div className="relative w-80 h-80 md:w-96 md:h-96 drop-shadow-2xl rounded-xl overflow-hidden">
-                  <img
-                    src={uofthacks}
-                    alt="Frictionless Logo"
-                    className="object-cover"
-                  />
-                </div>
-                <div className="space-y-2 max-w-4xl">
-                  <h1 className="text-4xl md:text-6xl font-bold text-[#100f0f]">
-                    {variant.heroTitle || "Frictionless"}
-                  </h1>
-                  <p className="text-xl md:text-2xl text-[#6f6e69]">
-                    {variant.heroSubtitle ||
-                      "Turn behavioral events into AI-powered UX insights that automatically improve your product"}
-                  </p>
-                </div>
+                {variant.swapPictureAndText ? (
+                  <>
+                    <div className="space-y-2 max-w-4xl">
+                      <h1 className="text-4xl md:text-6xl font-bold text-[#100f0f]">
+                        {variant.heroTitle || "Frictionless"}
+                      </h1>
+                      <p className="text-xl md:text-2xl text-[#6f6e69]">
+                        {variant.heroSubtitle ||
+                          "Turn behavioral events into AI-powered UX insights that automatically improve your product"}
+                      </p>
+                    </div>
+                    <div className="relative w-80 h-80 md:w-96 md:h-96 drop-shadow-2xl rounded-xl overflow-hidden">
+                      <img
+                        src={uofthacks}
+                        alt="Frictionless Logo"
+                        className="object-cover"
+                      />
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div className="relative w-80 h-80 md:w-96 md:h-96 drop-shadow-2xl rounded-xl overflow-hidden">
+                      <img
+                        src={uofthacks}
+                        alt="Frictionless Logo"
+                        className="object-cover"
+                      />
+                    </div>
+                    <div className="space-y-2 max-w-4xl">
+                      <h1 className="text-4xl md:text-6xl font-bold text-[#100f0f]">
+                        {variant.heroTitle || "Frictionless"}
+                      </h1>
+                      <p className="text-xl md:text-2xl text-[#6f6e69]">
+                        {variant.heroSubtitle ||
+                          "Turn behavioral events into AI-powered UX insights that automatically improve your product"}
+                      </p>
+                    </div>
+                  </>
+                )}
                 <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto max-w-md">
                   <a href="#features" className="inline-block w-full sm:w-auto">
                     <button className="relative overflow-hidden cursor-pointer w-full text-lg px-8 py-6 h-auto bg-[#1c1b1a] text-[#f2f0e5] rounded-md hover:bg-[#343231] transition-colors shadow-md">
@@ -888,6 +656,30 @@ function TestWebsiteVariant({
         );
 
       case "features":
+        // Define feature cards
+        const featureCards = [
+          {
+            title: "Behavioral Event Tracking",
+            subtitle: "Capture product analytics-style events in real-time",
+            description: "Track user actions like clicks, searches, rage clicks, and navigation patterns.",
+          },
+          {
+            title: "AI-Powered Insights",
+            subtitle: "AI does what rules engines cannot - find hidden patterns",
+            description: "Our AI analyzes behavioral data to detect friction patterns and segment users by behavior.",
+          },
+          {
+            title: "Self-Improving Product",
+            subtitle: "Data → Insights → Action loop",
+            description: "Every user interaction feeds back into the system to continuously improve.",
+          },
+        ];
+
+        // Swap order if requested
+        const displayCards = variant.swapParagraphs
+          ? [featureCards[2], featureCards[1], featureCards[0]]
+          : featureCards;
+
         return (
           <div
             key={sectionId}
@@ -898,54 +690,26 @@ function TestWebsiteVariant({
             <section id="features" className="container mx-auto px-4 py-8">
               <div className="max-w-6xl mx-auto">
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div className="shadow-lg hover:shadow-xl transition-shadow rounded-lg border border-[#e6e4d9] bg-[#fffcf0] text-[#100f0f]">
-                    <div className="p-6 pb-3">
-                      <h3 className="text-2xl font-semibold leading-none tracking-tight">
-                        Behavioral Event Tracking
-                      </h3>
-                      <p className="text-sm text-[#6f6e69]">
-                        Capture product analytics-style events in real-time
-                      </p>
+                  {displayCards.map((card, index) => (
+                    <div
+                      key={index}
+                      className="shadow-lg hover:shadow-xl transition-shadow rounded-lg border border-[#e6e4d9] bg-[#fffcf0] text-[#100f0f]"
+                    >
+                      <div className="p-6 pb-3">
+                        <h3 className="text-2xl font-semibold leading-none tracking-tight">
+                          {card.title}
+                        </h3>
+                        <p className="text-sm text-[#6f6e69]">
+                          {card.subtitle}
+                        </p>
+                      </div>
+                      <div className="p-6 pt-3">
+                        <p className="text-base text-[#6f6e69]">
+                          {card.description}
+                        </p>
+                      </div>
                     </div>
-                    <div className="p-6 pt-3">
-                      <p className="text-base text-[#6f6e69]">
-                        Track user actions like clicks, searches, rage clicks,
-                        and navigation patterns.
-                      </p>
-                    </div>
-                  </div>
-                  <div className="shadow-lg hover:shadow-xl transition-shadow rounded-lg border border-[#e6e4d9] bg-[#fffcf0] text-[#100f0f]">
-                    <div className="p-6 pb-3">
-                      <h3 className="text-2xl font-semibold leading-none tracking-tight">
-                        AI-Powered Insights
-                      </h3>
-                      <p className="text-sm text-[#6f6e69]">
-                        AI does what rules engines cannot - find hidden patterns
-                      </p>
-                    </div>
-                    <div className="p-6 pt-3">
-                      <p className="text-base text-[#6f6e69]">
-                        Our AI analyzes behavioral data to detect friction
-                        patterns and segment users by behavior.
-                      </p>
-                    </div>
-                  </div>
-                  <div className="shadow-lg hover:shadow-xl transition-shadow rounded-lg border border-[#e6e4d9] bg-[#fffcf0] text-[#100f0f]">
-                    <div className="p-6 pb-3">
-                      <h3 className="text-2xl font-semibold leading-none tracking-tight">
-                        Self-Improving Product
-                      </h3>
-                      <p className="text-sm text-[#6f6e69]">
-                        Data → Insights → Action loop
-                      </p>
-                    </div>
-                    <div className="p-6 pt-3">
-                      <p className="text-base text-[#6f6e69]">
-                        Every user interaction feeds back into the system to
-                        continuously improve.
-                      </p>
-                    </div>
-                  </div>
+                  ))}
                 </div>
               </div>
             </section>
@@ -1020,7 +784,7 @@ function TestWebsiteVariant({
   };
 
   return (
-    <main className={gradientClass}>
+    <main className={backgroundClass}>
       {sectionOrder.length === 0 ? (
         <div className="flex items-center justify-center min-h-screen">
           <div className="text-center text-gray-500 p-8">

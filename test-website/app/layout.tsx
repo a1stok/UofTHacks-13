@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { SessionRecorderProvider } from "../components/SessionRecorderProvider";
+import { ResetSessionButton } from "../components/ResetSessionButton";
 
 export const metadata: Metadata = {
   title: "Frictionless",
@@ -17,6 +18,7 @@ export default function RootLayout({
       <body className="min-h-screen bg-background font-sans antialiased">
         <SessionRecorderProvider version="A" enabled={true}>
           {children}
+          <ResetSessionButton />
         </SessionRecorderProvider>
       </body>
     </html>

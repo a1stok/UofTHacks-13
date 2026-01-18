@@ -1,13 +1,15 @@
 /**
  * Recordings Library
  * 
- * Functions for fetching and managing session recordings
- * Recordings are stored on the test-website API server
+ * Fetches session recordings from the test-website API
  */
 
 export interface RecordingMetadata {
   filename: string
   sessionId: string
+  amplitudeSessionId?: number
+  amplitudeDeviceId?: string
+  amplitudeUserId?: string | null
   version: string
   startTime: number
   endTime: number
@@ -24,123 +26,85 @@ export interface Recording extends RecordingMetadata {
   events: any[]
 }
 
-// List of possible ports the test-website API might be running on
-// 3001 is first since Next.js often uses it when 3000 is busy
-const POSSIBLE_PORTS = [3001, 3000, 3002, 3003, 3004, 3005]
 const API_PATH = '/api/recordings'
-const FETCH_TIMEOUT = 5000 // 5 second timeout per port
 
-// Fetch with timeout
-async function fetchWithTimeout(url: string, timeout: number): Promise<Response> {
-  const controller = new AbortController()
-  const timeoutId = setTimeout(() => controller.abort(), timeout)
-
-  try {
-    const response = await fetch(url, { signal: controller.signal })
-    clearTimeout(timeoutId)
-    return response
-  } catch (error) {
-    clearTimeout(timeoutId)
-    throw error
-  }
+// Get the correct port based on version
+function getPortForVersion(version?: string): number {
+  // Version A -> Port 3001, Version B -> Port 3002
+  return version === 'B' ? 3002 : 3001
 }
 
-// Helper to get from ALL active ports
-async function fetchFromAllPorts(path: string, params: URLSearchParams) {
-  console.log('[Recordings] Fetching from all ports:', POSSIBLE_PORTS)
-  const allResults: any[] = []
-
-  const fetches = POSSIBLE_PORTS.map(async (port) => {
-    try {
-      const url = new URL(`http://localhost:${port}${path}`)
-      params.forEach((value, key) => url.searchParams.append(key, value))
-
-      const response = await fetchWithTimeout(url.toString(), FETCH_TIMEOUT)
-      if (response.ok) {
-        const data = await response.json()
-        return data.recordings || []
-      }
-    } catch (e) {
-      // Ignore failures
-    }
-    return []
-  })
-
-  const results = await Promise.all(fetches)
-  return results.flat()
+// Check if a port is available
+async function checkPort(port: number): Promise<boolean> {
+  try {
+    const res = await fetch(`http://localhost:${port}${API_PATH}`, {
+      method: 'HEAD',
+      signal: AbortSignal.timeout(2000)
+    })
+    return res.ok
+  } catch {
+    return false
+  }
 }
 
 export async function fetchRecordingsList(version?: string): Promise<RecordingMetadata[]> {
   try {
-    const params = new URLSearchParams()
-    if (version) {
-      params.set('version', version)
+    const port = getPortForVersion(version)
+    
+    // Check if the specific port is available
+    const isAvailable = await checkPort(port)
+    if (!isAvailable) {
+      console.warn(`[Recordings] Port ${port} not available for version ${version || 'A'}`)
+      return []
     }
 
-    const recordings = await fetchFromAllPorts(API_PATH, params)
+    const url = new URL(`http://localhost:${port}${API_PATH}`)
+    if (version) {
+      url.searchParams.set('version', version)
+    }
+    
+    const response = await fetch(url.toString())
+    if (!response.ok) {
+      throw new Error(`Failed to fetch: ${response.statusText}`)
+    }
+    
+    const data = await response.json()
+    const recordings: RecordingMetadata[] = data.recordings || []
 
-    // Sort by startTime descending (most recent first)
-    const sorted = recordings.sort((a: RecordingMetadata, b: RecordingMetadata) => b.startTime - a.startTime)
+    // API now returns each snapshot as separate recording, so no deduplication needed
+    // Sort by startTime ascending (chronological order) so first snapshot shows as 0:00
+    recordings.sort((a, b) => a.startTime - b.startTime)
 
-    // Deduplicate by sessionId AND version - keep the one with the most data
-    const bestRecordings = new Map<string, RecordingMetadata>()
-
-    // Group by unique session+version key
-    sorted.forEach((rec: RecordingMetadata) => {
-      const key = `${rec.sessionId}-${rec.version || 'unknown'}`
-      const existing = bestRecordings.get(key)
-
-      // If we haven't seen this session, or this file has more events/is newer, use it
-      if (!existing) {
-        bestRecordings.set(key, rec)
-      } else {
-        // Prioritize: More events > Later end time > Later start time
-        const isBetter =
-          (rec.eventCount > existing.eventCount) ||
-          (rec.eventCount === existing.eventCount && rec.endTime > existing.endTime)
-
-        if (isBetter) {
-          bestRecordings.set(key, rec)
-        }
-      }
-    })
-
-    const deduplicated = Array.from(bestRecordings.values())
-      .sort((a, b) => b.startTime - a.startTime)
-
-    console.log(`[Recordings] Fetched ${recordings.length} files, deduplicated to ${deduplicated.length} unique sessions (keeping best quality)`)
-    return deduplicated
+    console.log(`[Recordings] Version ${version || 'A'} from port ${port}: ${recordings.length} recordings`)
+    return recordings
   } catch (error) {
-    console.error('Error fetching recordings:', error)
+    console.error(`[Recordings] Error fetching version ${version}:`, error)
     return []
   }
 }
 
-// Helper to try fetching from multiple ports and return the FIRST one that works (for single recording)
-async function fetchFromAnyPort(path: string, params: URLSearchParams) {
-  for (const port of POSSIBLE_PORTS) {
-    try {
-      const url = new URL(`http://localhost:${port}${path}`)
-      params.forEach((value, key) => url.searchParams.append(key, value))
-      const response = await fetchWithTimeout(url.toString(), FETCH_TIMEOUT)
-      if (response.ok) {
-        return await response.json()
-      }
-    } catch (e) {
-      continue
-    }
-  }
-  return null
-}
-
 export async function fetchRecording(sessionId: string): Promise<Recording | null> {
   try {
-    const params = new URLSearchParams()
-    params.set('sessionId', sessionId)
-
-    return await fetchFromAnyPort(API_PATH, params)
+    // Try both ports for individual recording fetch (since we might not know the version)
+    const ports = [3001, 3002]
+    
+    for (const port of ports) {
+      try {
+        const url = new URL(`http://localhost:${port}${API_PATH}`)
+    url.searchParams.set('sessionId', sessionId)
+    
+    const response = await fetch(url.toString())
+        if (response.ok) {
+    return await response.json()
+        }
+      } catch {
+        continue
+      }
+    }
+    
+    return null
   } catch (error) {
-    console.error('Error fetching recording:', error)
+    console.error('[Recordings] Error fetching recording:', error)
     return null
   }
 }

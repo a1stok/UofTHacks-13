@@ -4,7 +4,7 @@ import { existsSync } from 'fs'
 import path from 'path'
 
 // Path to recordings directory (relative to project root)
-const RECORDINGS_DIR = path.join(process.cwd(), '..', 'output', 'recordings')
+const RECORDINGS_DIR = path.join(process.cwd(), '..', 'output', 'recordings-b')
 
 // Ensure recordings directory exists
 async function ensureRecordingsDir() {
