@@ -60,3 +60,6 @@ temp/
 
 # Vite
 .vite/
+
+# turbo
+.turbo
