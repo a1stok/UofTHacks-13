@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Outlet, NavLink, useLocation } from "react-router";
 import {
   Sidebar,
   SidebarContent,
@@ -17,11 +18,8 @@ import {
   SidebarTrigger,
 } from "~/components/ui/sidebar";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "~/components/ui/collapsible";
-import { Card, CardContent } from "~/components/ui/card";
-import { Settings, Play, Zap, Eye, GitCompare, MousePointer, ChevronRight, Globe, FlaskConical, LayoutTemplate, Sparkles, PenTool, Users, GitBranch } from "lucide-react";
+import { Settings, Zap, ChevronRight, Globe, FlaskConical, LayoutTemplate, Sparkles, PenTool, Users, GitBranch, GitCompare } from "lucide-react";
 import type { Route } from "./+types/dashboard";
-import amplitude from "../../public/AMPLITUDE_FULL_BLUE.svg";
-import github from "../../public/Github.svg";
 
 export function meta({}: Route.MetaArgs) {
   return [
@@ -31,20 +29,24 @@ export function meta({}: Route.MetaArgs) {
 }
 
 const websiteGeneratorItems = [
-  { id: "templates", title: "Templates", icon: LayoutTemplate },
-  { id: "ai-generated", title: "AI Generated", icon: Sparkles },
-  { id: "manual", title: "Manual", icon: PenTool },
+  { to: "generator/templates", title: "Templates", icon: LayoutTemplate },
+  { to: "generator/ai-generated", title: "AI Generated", icon: Sparkles },
+  { to: "generator/manual", title: "Manual", icon: PenTool },
 ];
 
 const abTestingItems = [
-  { id: "ab-testing", title: "A/B Testing", icon: GitCompare },
-  { id: "paired-overview", title: "Paired Overview", icon: GitBranch },
-  { id: "user-flows", title: "User Flows", icon: Users },
+  { to: "experiments/ab-testing", title: "A/B Testing", icon: GitCompare },
+  { to: "experiments/paired-overview", title: "Paired Overview", icon: GitBranch },
+  { to: "experiments/user-flows", title: "User Flows", icon: Users },
 ];
 
-function AppSidebar({ currentView, onViewChange }: { currentView: string; onViewChange: (view: string) => void }) {
+function AppSidebar() {
   const [websiteGenOpen, setWebsiteGenOpen] = useState(true);
   const [abTestingOpen, setAbTestingOpen] = useState(true);
+  const location = useLocation();
+
+  const isGeneratorActive = location.pathname.includes("/dashboard/generator");
+  const isExperimentsActive = location.pathname.includes("/dashboard/experiments");
 
   return (
     <Sidebar>
@@ -62,12 +64,15 @@ function AppSidebar({ currentView, onViewChange }: { currentView: string; onView
           <SidebarGroupContent>
             <SidebarMenu>
               <SidebarMenuItem>
-                <SidebarMenuButton
-                  isActive={currentView === "setup"}
-                  onClick={() => onViewChange("setup")}
-                >
-                  <Settings className="size-4" />
-                  <span>Agent Setup</span>
+                <SidebarMenuButton asChild>
+                  <NavLink 
+                    to="/dashboard" 
+                    end
+                    className={({ isActive }) => isActive ? "bg-sidebar-accent text-sidebar-accent-foreground" : ""}
+                  >
+                    <Settings className="size-4" />
+                    <span>Agent Setup</span>
+                  </NavLink>
                 </SidebarMenuButton>
               </SidebarMenuItem>
             </SidebarMenu>
@@ -79,10 +84,10 @@ function AppSidebar({ currentView, onViewChange }: { currentView: string; onView
           <SidebarGroupContent>
             <SidebarMenu>
               {/* Website Generator Folder */}
-              <Collapsible open={websiteGenOpen} onOpenChange={setWebsiteGenOpen} className="group/collapsible">
+              <Collapsible open={websiteGenOpen || isGeneratorActive} onOpenChange={setWebsiteGenOpen} className="group/collapsible">
                 <SidebarMenuItem>
                   <CollapsibleTrigger asChild>
-                    <SidebarMenuButton>
+                    <SidebarMenuButton className={isGeneratorActive ? "bg-sidebar-accent/50" : ""}>
                       <Globe className="size-4" />
                       <span>Website Generator</span>
                       <ChevronRight className="ml-auto size-4 transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
@@ -91,13 +96,15 @@ function AppSidebar({ currentView, onViewChange }: { currentView: string; onView
                   <CollapsibleContent>
                     <SidebarMenuSub>
                       {websiteGeneratorItems.map((item) => (
-                        <SidebarMenuSubItem key={item.id}>
-                          <SidebarMenuSubButton
-                            isActive={currentView === item.id}
-                            onClick={() => onViewChange(item.id)}
-                          >
-                            <item.icon className="size-4" />
-                            <span>{item.title}</span>
+                        <SidebarMenuSubItem key={item.to}>
+                          <SidebarMenuSubButton asChild>
+                            <NavLink 
+                              to={item.to}
+                              className={({ isActive }) => isActive ? "bg-sidebar-accent text-sidebar-accent-foreground" : ""}
+                            >
+                              <item.icon className="size-4" />
+                              <span>{item.title}</span>
+                            </NavLink>
                           </SidebarMenuSubButton>
                         </SidebarMenuSubItem>
                       ))}
@@ -107,10 +114,10 @@ function AppSidebar({ currentView, onViewChange }: { currentView: string; onView
               </Collapsible>
 
               {/* A/B Testing Folder */}
-              <Collapsible open={abTestingOpen} onOpenChange={setAbTestingOpen} className="group/collapsible">
+              <Collapsible open={abTestingOpen || isExperimentsActive} onOpenChange={setAbTestingOpen} className="group/collapsible">
                 <SidebarMenuItem>
                   <CollapsibleTrigger asChild>
-                    <SidebarMenuButton>
+                    <SidebarMenuButton className={isExperimentsActive ? "bg-sidebar-accent/50" : ""}>
                       <FlaskConical className="size-4" />
                       <span>A/B Testing</span>
                       <ChevronRight className="ml-auto size-4 transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
@@ -119,13 +126,15 @@ function AppSidebar({ currentView, onViewChange }: { currentView: string; onView
                   <CollapsibleContent>
                     <SidebarMenuSub>
                       {abTestingItems.map((item) => (
-                        <SidebarMenuSubItem key={item.id}>
-                          <SidebarMenuSubButton
-                            isActive={currentView === item.id}
-                            onClick={() => onViewChange(item.id)}
-                          >
-                            <item.icon className="size-4" />
-                            <span>{item.title}</span>
+                        <SidebarMenuSubItem key={item.to}>
+                          <SidebarMenuSubButton asChild>
+                            <NavLink 
+                              to={item.to}
+                              className={({ isActive }) => isActive ? "bg-sidebar-accent text-sidebar-accent-foreground" : ""}
+                            >
+                              <item.icon className="size-4" />
+                              <span>{item.title}</span>
+                            </NavLink>
                           </SidebarMenuSubButton>
                         </SidebarMenuSubItem>
                       ))}
@@ -141,135 +150,17 @@ function AppSidebar({ currentView, onViewChange }: { currentView: string; onView
   );
 }
 
-function AgentSetupView() {
-  const [amplitudeKey, setAmplitudeKey] = useState("");
-  const [githubToken, setGithubToken] = useState("");
-  const [generatedKey, setGeneratedKey] = useState("");
-
-  const handleGenerate = () => {
-    if (!amplitudeKey) return;
-    const key = `fl_${Math.random().toString(36).substring(2, 15)}${Math.random().toString(36).substring(2, 15)}`;
-    setGeneratedKey(key);
-  };
-
-  return (
-    <div className="max-w-md space-y-8">
-      <div>
-        <h2 className="text-lg font-medium">Connect your services</h2>
-      </div>
-
-      <div className="space-y-5">
-        <div className="space-y-1.5">
-          <label className="text-sm text-muted-foreground flex items-center gap-2">
-            <img src={amplitude} alt="Amplitude" className="h-20" />
-            API Key
-          </label>
-          <input
-            type="text"
-            value={amplitudeKey}
-            onChange={(e) => setAmplitudeKey(e.target.value)}
-            placeholder="amp_xxxxxxxx"
-            className="w-full px-3 py-2 text-sm border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-[hsl(var(--mypage))] focus:border-transparent"
-          />
-        </div>
-
-        <div className="space-y-1.5">
-          <label className="text-sm text-muted-foreground flex items-center gap-2">
-            <img src={github} alt="GitHub" className="h-20 dark:invert" />
-            Access Token
-            <span className="text-xs opacity-60">optional</span>
-          </label>
-          <input
-            type="text"
-            value={githubToken}
-            onChange={(e) => setGithubToken(e.target.value)}
-            placeholder="ghp_xxxxxxxx"
-            className="w-full px-3 py-2 text-sm border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-[hsl(var(--mypage))] focus:border-transparent"
-          />
-        </div>
-
-        <button
-          onClick={handleGenerate}
-          disabled={!amplitudeKey}
-          className="w-full px-4 py-2 text-sm font-medium text-white bg-[hsl(var(--mypage))] rounded-md hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-opacity"
-        >
-          Generate API Key
-        </button>
-      </div>
-
-      {generatedKey && (
-        <div className="space-y-2 pt-4 border-t">
-          <label className="text-sm text-muted-foreground">Your API Key</label>
-          <div className="flex gap-2">
-            <code className="flex-1 px-3 py-2 text-sm bg-muted rounded-md font-mono truncate">
-              {generatedKey}
-            </code>
-            <button
-              onClick={() => navigator.clipboard.writeText(generatedKey)}
-              className="px-3 py-2 text-sm border rounded-md hover:bg-muted transition-colors"
-            >
-              Copy
-            </button>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
-
-function DemoPlaceholder({ title, description }: { title: string; description: string }) {
-  return (
-    <div className="space-y-6">
-      <div>
-        <h2 className="text-xl font-semibold">{title}</h2>
-        <p className="text-muted-foreground text-sm mt-1">{description}</p>
-      </div>
-      <Card>
-        <CardContent className="p-6 text-center text-muted-foreground">
-          <Play className="size-8 mx-auto mb-2 opacity-50" />
-          <div>Demo placeholder</div>
-        </CardContent>
-      </Card>
-    </div>
-  );
-}
-
 export default function Dashboard() {
-  const [currentView, setCurrentView] = useState("setup");
-
-  const renderView = () => {
-    switch (currentView) {
-      case "setup":
-        return <AgentSetupView />;
-      // Website Generator views
-      case "templates":
-        return <DemoPlaceholder title="Templates" description="Choose from pre-built website templates" />;
-      case "ai-generated":
-        return <DemoPlaceholder title="AI Generated" description="Generate websites using AI" />;
-      case "manual":
-        return <DemoPlaceholder title="Manual" description="Build your website manually" />;
-      // A/B Testing views
-      case "ab-testing":
-        return <DemoPlaceholder title="A/B Testing" description="Create and manage A/B tests" />;
-      case "paired-overview":
-        return <DemoPlaceholder title="Paired Overview" description="Compare test variants side by side" />;
-      case "user-flows":
-        return <DemoPlaceholder title="User Flows" description="Analyze user journey through your tests" />;
-      default:
-        return <AgentSetupView />;
-    }
-  };
-
   return (
     <SidebarProvider>
-      <AppSidebar currentView={currentView} onViewChange={setCurrentView} />
+      <AppSidebar />
       <SidebarInset>
         <header className="flex h-14 items-center gap-2 border-b px-4">
           <SidebarTrigger />
           <h1 className="text-lg font-medium">Frictionless</h1>
         </header>
         <main className="flex-1 p-6">
-          {renderView()}
+          <Outlet />
         </main>
       </SidebarInset>
     </SidebarProvider>
