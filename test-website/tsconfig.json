@@ -1,0 +1,17 @@
+{
+  "extends": "./tsconfig/nextjs.json",
+  "compilerOptions": {
+    "strict": true,
+    "plugins": [{ "name": "next" }],
+    "paths": {
+      "@/core": ["./node_modules/@measured/puck"],
+      "@/core/*": ["./node_modules/@measured/puck/*"],
+      "@/core/components/Button": ["./components/Button"],
+      "@puckeditor/core": ["./node_modules/@measured/puck"],
+      "@/plugin-heading-analyzer": ["./lib/plugin-heading-analyzer"],
+      "@/plugin-heading-analyzer/*": ["./lib/plugin-heading-analyzer/*"]
+    }
+  },
+  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
+  "exclude": ["node_modules"]
+}
