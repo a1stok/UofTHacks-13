@@ -18,7 +18,7 @@ import {
   SidebarTrigger,
 } from "~/components/ui/sidebar";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "~/components/ui/collapsible";
-import { Settings, Zap, ChevronRight, Globe, FlaskConical, LayoutTemplate, Sparkles, PenTool, Users, GitBranch, GitCompare } from "lucide-react";
+import { Settings, Zap, ChevronRight, Globe, FlaskConical, Plug, Sparkles, PenTool, Users, GitBranch } from "lucide-react";
 import type { Route } from "./+types/dashboard";
 
 export function meta({}: Route.MetaArgs) {
@@ -29,13 +29,12 @@ export function meta({}: Route.MetaArgs) {
 }
 
 const websiteGeneratorItems = [
-  { to: "generator/templates", title: "Templates", icon: LayoutTemplate },
+  { to: "generator/templates", title: "MCP", icon: Plug },
   { to: "generator/ai-generated", title: "AI Generated", icon: Sparkles },
   { to: "generator/manual", title: "Manual", icon: PenTool },
 ];
 
 const abTestingItems = [
-  { to: "experiments/ab-testing", title: "A/B Testing", icon: GitCompare },
   { to: "experiments/paired-overview", title: "Paired Overview", icon: GitBranch },
   { to: "experiments/user-flows", title: "User Flows", icon: Users },
 ];
