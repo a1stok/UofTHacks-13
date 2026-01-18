@@ -1,10 +1,11 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Card, CardContent } from "~/components/ui/card";
-import { ArrowRight, Eye, Brain, Play, Pause, RefreshCw, Video, Loader2, Clock, AlertCircle } from "lucide-react";
+import { ArrowRight, Eye, Brain, Play, Pause, RefreshCw, Video, Loader2, Clock, AlertCircle, MousePointer, Scroll, FormInput, Timer, Focus, Activity, Monitor, Zap } from "lucide-react";
 import type { Route } from "./+types/user-flows";
 import { useRecordingsList, useRecording } from "~/hooks/use-recordings";
 import { formatDuration, type RecordingMetadata } from "~/lib/recordings";
 import { SessionPlayer } from "~/components/session-player";
+import { analyzeRecording, formatFlowDuration, formatMs, type FlowAnalysis } from "~/lib/flow-analysis";
 
 export function meta({ }: Route.MetaArgs) {
   return [
@@ -89,6 +90,30 @@ export default function UserFlowsView() {
     refetchA();
     refetchB();
   };
+
+  // Analyze recordings to extract flow data
+  const flowAnalysisA = useMemo<FlowAnalysis | null>(() => {
+    if (!recordingDataA || !recordingDataA.events?.length) return null;
+    return analyzeRecording(recordingDataA);
+  }, [recordingDataA]);
+
+  const flowAnalysisB = useMemo<FlowAnalysis | null>(() => {
+    if (!recordingDataB || !recordingDataB.events?.length) return null;
+    return analyzeRecording(recordingDataB);
+  }, [recordingDataB]);
+
+  // Aggregate stats for all recordings
+  const statsA = useMemo(() => {
+    const count = recordingsA?.length || 0;
+    const avgDuration = recordingsA ? recordingsA.reduce((sum, r) => sum + r.duration, 0) / (count || 1) : 0;
+    return { count, avgDuration };
+  }, [recordingsA]);
+
+  const statsB = useMemo(() => {
+    const count = recordingsB?.length || 0;
+    const avgDuration = recordingsB ? recordingsB.reduce((sum, r) => sum + r.duration, 0) / (count || 1) : 0;
+    return { count, avgDuration };
+  }, [recordingsB]);
 
   // Helper to determine what to show for Version A player
   const renderVersionAContent = () => {
@@ -400,51 +425,298 @@ export default function UserFlowsView() {
         <h3 className="text-lg font-medium mb-6 flex items-center gap-2">
           <Eye className="h-5 w-5" />
           Flow Comparison
+          <span className="text-xs text-muted-foreground font-normal ml-2">
+            (from selected recordings)
+          </span>
         </h3>
         <div className="grid grid-cols-2 gap-8">
           {/* Version A Flow */}
           <Card className="flex flex-col gap-0 py-0 overflow-hidden">
-            <div className="p-3 border-b bg-muted/50 flex items-center gap-2">
-              <div className="w-2 h-2 bg-black rounded-full"></div>
-              <span className="text-sm font-medium">Version A (Original)</span>
+            <div className="p-3 border-b bg-muted/50 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <div className="w-2 h-2 bg-black rounded-full"></div>
+                <span className="text-sm font-medium">Version A (Original)</span>
+              </div>
+              <span className="text-xs text-muted-foreground">
+                {statsA.count} sessions
+              </span>
             </div>
             <CardContent className="p-4 flex-1">
-              <div className="space-y-3">
-                <div className="p-3 border rounded-lg text-center text-sm bg-background hover:bg-muted/50 transition-colors">Landing</div>
-                <div className="flex justify-center">
-                  <ArrowRight className="h-4 w-4 text-muted-foreground rotate-90" />
+              {flowAnalysisA ? (
+                <div className="space-y-4">
+                  {/* Pathway */}
+                  <div className="p-3 border rounded-lg">
+                    <div className="text-xs font-medium text-muted-foreground mb-2">Pathway</div>
+                    <div className="flex items-center justify-between text-sm">
+                      <div className="p-2 border rounded bg-background text-center flex-1">
+                        Start
+                      </div>
+                      <ArrowRight className="h-4 w-4 text-muted-foreground mx-1" />
+                      <div className="p-2 border rounded bg-background text-center flex-1">
+                        Scroll {Math.round(flowAnalysisA.maxScrollDepth)}px
+                      </div>
+                      <ArrowRight className="h-4 w-4 text-muted-foreground mx-1" />
+                      <div className={`p-2 border rounded text-center flex-1 ${flowAnalysisA.exitType === 'completed'
+                        ? 'bg-green-50 border-green-200 text-green-700'
+                        : flowAnalysisA.exitType === 'abandoned'
+                          ? 'bg-red-50 border-red-200 text-red-700'
+                          : 'bg-muted'
+                        }`}>
+                        {flowAnalysisA.exitType === 'completed' ? 'Engaged' :
+                          flowAnalysisA.exitType === 'abandoned' ? 'Bounce' : 'Exit'}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Engagement Score */}
+                  <div className="p-2 border rounded-lg">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-xs text-muted-foreground flex items-center gap-1">
+                        <Zap className="h-3 w-3" />
+                        Engagement
+                      </span>
+                      <span className={`text-sm font-bold ${flowAnalysisA.engagementScore >= 60 ? 'text-green-600' :
+                        flowAnalysisA.engagementScore >= 30 ? 'text-yellow-600' : 'text-red-600'
+                        }`}>
+                        {flowAnalysisA.engagementScore}/100
+                      </span>
+                    </div>
+                    <div className="w-full bg-muted rounded-full h-1.5">
+                      <div
+                        className={`h-1.5 rounded-full ${flowAnalysisA.engagementScore >= 60 ? 'bg-green-500' :
+                          flowAnalysisA.engagementScore >= 30 ? 'bg-yellow-500' : 'bg-red-500'
+                          }`}
+                        style={{ width: `${flowAnalysisA.engagementScore}%` }}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Metrics Grid */}
+                  <div className="grid grid-cols-3 gap-2">
+                    <div className="p-2 border rounded-lg text-center">
+                      <MousePointer className="h-3 w-3 mx-auto mb-1 text-muted-foreground" />
+                      <div className="text-base font-semibold">{flowAnalysisA.totalClicks}</div>
+                      <div className="text-[10px] text-muted-foreground">Clicks</div>
+                    </div>
+                    <div className="p-2 border rounded-lg text-center">
+                      <Scroll className="h-3 w-3 mx-auto mb-1 text-muted-foreground" />
+                      <div className="text-base font-semibold">{flowAnalysisA.totalScrolls}</div>
+                      <div className="text-[10px] text-muted-foreground">Scrolls</div>
+                    </div>
+                    <div className="p-2 border rounded-lg text-center">
+                      <FormInput className="h-3 w-3 mx-auto mb-1 text-muted-foreground" />
+                      <div className="text-base font-semibold">{flowAnalysisA.totalInputs}</div>
+                      <div className="text-[10px] text-muted-foreground">Inputs</div>
+                    </div>
+                  </div>
+
+                  {/* Time & Activity */}
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="p-2 border rounded-lg">
+                      <div className="flex items-center gap-1 text-xs text-muted-foreground mb-1">
+                        <Timer className="h-3 w-3" />
+                        First Click
+                      </div>
+                      <div className="text-sm font-medium">{formatMs(flowAnalysisA.timeToFirstClick)}</div>
+                    </div>
+                    <div className="p-2 border rounded-lg">
+                      <div className="flex items-center gap-1 text-xs text-muted-foreground mb-1">
+                        <Activity className="h-3 w-3" />
+                        Mouse Moves
+                      </div>
+                      <div className="text-sm font-medium">{flowAnalysisA.totalMouseMoves}</div>
+                    </div>
+                  </div>
+
+                  {/* More Metrics */}
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="p-2 border rounded-lg">
+                      <div className="flex items-center gap-1 text-xs text-muted-foreground mb-1">
+                        <Focus className="h-3 w-3" />
+                        Focus Events
+                      </div>
+                      <div className="text-sm font-medium">{flowAnalysisA.totalFocusEvents}</div>
+                    </div>
+                    <div className="p-2 border rounded-lg">
+                      <div className="flex items-center gap-1 text-xs text-muted-foreground mb-1">
+                        <Activity className="h-3 w-3" />
+                        DOM Mutations
+                      </div>
+                      <div className="text-sm font-medium">{flowAnalysisA.totalMutations}</div>
+                    </div>
+                  </div>
+
+                  {/* Viewport & Duration */}
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="p-2 border rounded-lg">
+                      <div className="flex items-center gap-1 text-xs text-muted-foreground mb-1">
+                        <Monitor className="h-3 w-3" />
+                        Viewport
+                      </div>
+                      <div className="text-sm font-medium">
+                        {flowAnalysisA.viewport.width}×{flowAnalysisA.viewport.height}
+                      </div>
+                    </div>
+                    <div className="p-2 border rounded-lg">
+                      <div className="flex items-center gap-1 text-xs text-muted-foreground mb-1">
+                        <Clock className="h-3 w-3" />
+                        Duration
+                      </div>
+                      <div className="text-sm font-medium">{formatFlowDuration(flowAnalysisA.sessionDuration)}</div>
+                    </div>
+                  </div>
                 </div>
-                <div className="p-3 border rounded-lg text-center text-sm bg-background hover:bg-muted/50 transition-colors">Product</div>
-                <div className="flex justify-center">
-                  <ArrowRight className="h-4 w-4 text-muted-foreground rotate-90" />
+              ) : (
+                <div className="text-center text-muted-foreground py-8">
+                  <Eye className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                  <p className="text-sm">Select a recording to see flow</p>
                 </div>
-                <div className="p-3 border rounded-lg text-center text-sm bg-muted border-red-200 text-red-700">
-                  Exit (65%)
-                </div>
-              </div>
+              )}
             </CardContent>
           </Card>
 
           {/* Version B Flow */}
           <Card className="flex flex-col gap-0 py-0 overflow-hidden">
-            <div className="p-3 border-b bg-muted/50 flex items-center gap-2">
-              <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-              <span className="text-sm font-medium">Version B (Generated)</span>
+            <div className="p-3 border-b bg-blue-50/50 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                <span className="text-sm font-medium">Version B (Generated)</span>
+              </div>
+              <span className="text-xs text-muted-foreground">
+                {statsB.count} sessions
+              </span>
             </div>
             <CardContent className="p-4 flex-1">
-              <div className="space-y-3">
-                <div className="p-3 border rounded-lg text-center text-sm bg-background hover:bg-muted/50 transition-colors">Landing</div>
-                <div className="flex justify-center">
-                  <ArrowRight className="h-4 w-4 text-muted-foreground rotate-90" />
+              {flowAnalysisB ? (
+                <div className="space-y-4">
+                  {/* Pathway */}
+                  <div className="p-3 border rounded-lg">
+                    <div className="text-xs font-medium text-muted-foreground mb-2">Pathway</div>
+                    <div className="flex items-center justify-between text-sm">
+                      <div className="p-2 border rounded bg-background text-center flex-1">
+                        Start
+                      </div>
+                      <ArrowRight className="h-4 w-4 text-blue-500 mx-1" />
+                      <div className="p-2 border rounded bg-background text-center flex-1">
+                        Scroll {Math.round(flowAnalysisB.maxScrollDepth)}px
+                      </div>
+                      <ArrowRight className="h-4 w-4 text-blue-500 mx-1" />
+                      <div className={`p-2 border rounded text-center flex-1 ${flowAnalysisB.exitType === 'completed'
+                        ? 'bg-green-50 border-green-200 text-green-700'
+                        : flowAnalysisB.exitType === 'abandoned'
+                          ? 'bg-red-50 border-red-200 text-red-700'
+                          : 'bg-blue-50 border-blue-200 text-blue-700'
+                        }`}>
+                        {flowAnalysisB.exitType === 'completed' ? 'Engaged' :
+                          flowAnalysisB.exitType === 'abandoned' ? 'Bounce' : 'Exit'}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Engagement Score */}
+                  <div className="p-2 border rounded-lg">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-xs text-muted-foreground flex items-center gap-1">
+                        <Zap className="h-3 w-3" />
+                        Engagement
+                      </span>
+                      <span className={`text-sm font-bold ${flowAnalysisB.engagementScore >= 60 ? 'text-green-600' :
+                        flowAnalysisB.engagementScore >= 30 ? 'text-yellow-600' : 'text-red-600'
+                        }`}>
+                        {flowAnalysisB.engagementScore}/100
+                      </span>
+                    </div>
+                    <div className="w-full bg-muted rounded-full h-1.5">
+                      <div
+                        className={`h-1.5 rounded-full ${flowAnalysisB.engagementScore >= 60 ? 'bg-green-500' :
+                          flowAnalysisB.engagementScore >= 30 ? 'bg-yellow-500' : 'bg-red-500'
+                          }`}
+                        style={{ width: `${flowAnalysisB.engagementScore}%` }}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Metrics Grid */}
+                  <div className="grid grid-cols-3 gap-2">
+                    <div className="p-2 border rounded-lg text-center">
+                      <MousePointer className="h-3 w-3 mx-auto mb-1 text-blue-500" />
+                      <div className="text-base font-semibold">{flowAnalysisB.totalClicks}</div>
+                      <div className="text-[10px] text-muted-foreground">Clicks</div>
+                    </div>
+                    <div className="p-2 border rounded-lg text-center">
+                      <Scroll className="h-3 w-3 mx-auto mb-1 text-blue-500" />
+                      <div className="text-base font-semibold">{flowAnalysisB.totalScrolls}</div>
+                      <div className="text-[10px] text-muted-foreground">Scrolls</div>
+                    </div>
+                    <div className="p-2 border rounded-lg text-center">
+                      <FormInput className="h-3 w-3 mx-auto mb-1 text-blue-500" />
+                      <div className="text-base font-semibold">{flowAnalysisB.totalInputs}</div>
+                      <div className="text-[10px] text-muted-foreground">Inputs</div>
+                    </div>
+                  </div>
+
+                  {/* Time & Activity */}
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="p-2 border rounded-lg">
+                      <div className="flex items-center gap-1 text-xs text-muted-foreground mb-1">
+                        <Timer className="h-3 w-3" />
+                        First Click
+                      </div>
+                      <div className="text-sm font-medium">{formatMs(flowAnalysisB.timeToFirstClick)}</div>
+                    </div>
+                    <div className="p-2 border rounded-lg">
+                      <div className="flex items-center gap-1 text-xs text-muted-foreground mb-1">
+                        <Activity className="h-3 w-3" />
+                        Mouse Moves
+                      </div>
+                      <div className="text-sm font-medium">{flowAnalysisB.totalMouseMoves}</div>
+                    </div>
+                  </div>
+
+                  {/* More Metrics */}
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="p-2 border rounded-lg">
+                      <div className="flex items-center gap-1 text-xs text-muted-foreground mb-1">
+                        <Focus className="h-3 w-3" />
+                        Focus Events
+                      </div>
+                      <div className="text-sm font-medium">{flowAnalysisB.totalFocusEvents}</div>
+                    </div>
+                    <div className="p-2 border rounded-lg">
+                      <div className="flex items-center gap-1 text-xs text-muted-foreground mb-1">
+                        <Activity className="h-3 w-3" />
+                        DOM Mutations
+                      </div>
+                      <div className="text-sm font-medium">{flowAnalysisB.totalMutations}</div>
+                    </div>
+                  </div>
+
+                  {/* Viewport & Duration */}
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="p-2 border rounded-lg">
+                      <div className="flex items-center gap-1 text-xs text-muted-foreground mb-1">
+                        <Monitor className="h-3 w-3" />
+                        Viewport
+                      </div>
+                      <div className="text-sm font-medium">
+                        {flowAnalysisB.viewport.width}×{flowAnalysisB.viewport.height}
+                      </div>
+                    </div>
+                    <div className="p-2 border rounded-lg">
+                      <div className="flex items-center gap-1 text-xs text-muted-foreground mb-1">
+                        <Clock className="h-3 w-3" />
+                        Duration
+                      </div>
+                      <div className="text-sm font-medium">{formatFlowDuration(flowAnalysisB.sessionDuration)}</div>
+                    </div>
+                  </div>
                 </div>
-                <div className="p-3 border rounded-lg text-center text-sm bg-background hover:bg-muted/50 transition-colors">Product</div>
-                <div className="flex justify-center">
-                  <ArrowRight className="h-4 w-4 text-muted-foreground rotate-90" />
+              ) : (
+                <div className="text-center text-muted-foreground py-8">
+                  <Eye className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                  <p className="text-sm">No Version B recordings</p>
                 </div>
-                <div className="p-3 border rounded-lg text-center text-sm bg-blue-50 border-blue-200 text-blue-700">
-                  Convert (43%)
-                </div>
-              </div>
+              )}
             </CardContent>
           </Card>
         </div>
