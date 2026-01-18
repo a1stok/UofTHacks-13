@@ -3,8 +3,30 @@ import { writeFile, readdir, readFile, mkdir } from 'fs/promises'
 import { existsSync } from 'fs'
 import path from 'path'
 
-// Path to recordings directory (relative to project root)
-const RECORDINGS_DIR = path.join(process.cwd(), '..', 'output', 'recordings')
+// Path to recordings directory - try multiple locations to handle different working directories
+function getRecordingsDir(): string {
+  const possiblePaths = [
+    // Running from test-website folder: ../output/recordings
+    path.join(process.cwd(), '..', 'output', 'recordings'),
+    // Running from monorepo root via turbo: output/recordings  
+    path.join(process.cwd(), 'output', 'recordings'),
+    // Explicit path as fallback
+    path.resolve('C:/Users/Kostiantyn/Startup/output/recordings'),
+  ]
+
+  for (const p of possiblePaths) {
+    if (existsSync(p)) {
+      console.log('[API] Using recordings directory:', p)
+      return p
+    }
+  }
+
+  // Default to first path if none exist (will be created)
+  console.log('[API] No existing recordings dir found, will create:', possiblePaths[0])
+  return possiblePaths[0]
+}
+
+const RECORDINGS_DIR = getRecordingsDir()
 
 // CORS headers for cross-origin requests
 const corsHeaders = {
@@ -43,10 +65,10 @@ export async function POST(request: NextRequest) {
 
     console.log(`[API] Recording saved: ${filename}`)
 
-    return NextResponse.json({ 
-      success: true, 
+    return NextResponse.json({
+      success: true,
       filename,
-      path: filepath 
+      path: filepath
     }, { headers: corsHeaders })
   } catch (error) {
     console.error('[API] Error saving recording:', error)
@@ -70,12 +92,12 @@ export async function GET(request: NextRequest) {
     if (sessionId) {
       const files = await readdir(RECORDINGS_DIR)
       const file = files.find(f => f.includes(sessionId))
-      
+
       if (file) {
         const content = await readFile(path.join(RECORDINGS_DIR, file), 'utf-8')
         return NextResponse.json(JSON.parse(content), { headers: corsHeaders })
       }
-      
+
       return NextResponse.json(
         { error: 'Recording not found' },
         { status: 404, headers: corsHeaders }

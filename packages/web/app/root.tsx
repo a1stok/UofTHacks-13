@@ -8,6 +8,8 @@ import {
 } from "react-router";
 
 import { ThemeProvider } from "components/theme-provider";
+import { QueryProvider } from "~/components/providers/query-provider";
+import { AmplitudeProvider } from "~/components/providers/amplitude-provider";
 import type { Route } from "./+types/root";
 import "./fonts.css";
 import "./app.css";
@@ -36,7 +38,11 @@ export function Layout({ children }: { children: React.ReactNode }) {
         <script src="/theme-script.js" />
       </head>
       <body className="font-sans antialiased">
-        <ThemeProvider>{children}</ThemeProvider>
+        <QueryProvider>
+          <AmplitudeProvider>
+            <ThemeProvider>{children}</ThemeProvider>
+          </AmplitudeProvider>
+        </QueryProvider>
         <ScrollRestoration />
         <Scripts />
       </body>

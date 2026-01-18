@@ -1,81 +1,39 @@
-import { useState, useEffect, useCallback } from 'react'
+/**
+ * Recordings Hooks
+ * 
+ * React Query hooks for fetching session recordings
+ * These run client-side only since they fetch from localhost
+ */
+
+import { useQuery } from '@tanstack/react-query'
 import { fetchRecordingsList, fetchRecording } from '~/lib/recordings'
 import type { RecordingMetadata, Recording } from '~/lib/recordings'
 
+export const RECORDINGS_QUERY_KEYS = {
+  LIST: 'recordings:list',
+  DETAIL: 'recordings:detail',
+} as const
+
+// Check if we're on the client
+const isClient = typeof window !== 'undefined'
+
 export function useRecordingsList(version?: string) {
-  const [data, setData] = useState<RecordingMetadata[]>([])
-  const [isLoading, setIsLoading] = useState(true)
-  const [error, setError] = useState<Error | null>(null)
-
-  const refetch = useCallback(async () => {
-    setIsLoading(true)
-    try {
-      const recordings = await fetchRecordingsList(version)
-      setData(recordings)
-      setError(null)
-    } catch (err) {
-      setError(err as Error)
-    } finally {
-      setIsLoading(false)
-    }
-  }, [version])
-
-  useEffect(() => {
-    refetch()
-    
-    // Auto-refresh every 10 seconds
-    const interval = setInterval(refetch, 10000)
-    
-    // Listen for recording saved events to refresh immediately
-    const handleRecordingSaved = (event: CustomEvent) => {
-      const { version: savedVersion } = event.detail
-      if (!version || version === savedVersion) {
-        console.log(`[useRecordingsList] Recording saved for version ${savedVersion}, refreshing...`)
-        refetch()
-      }
-    }
-    
-    if (typeof window !== 'undefined') {
-      window.addEventListener('sessionRecordingSaved', handleRecordingSaved as EventListener)
-    }
-    
-    return () => {
-      clearInterval(interval)
-      if (typeof window !== 'undefined') {
-        window.removeEventListener('sessionRecordingSaved', handleRecordingSaved as EventListener)
-      }
-    }
-  }, [refetch, version])
-
-  return { data, isLoading, error, refetch }
+  return useQuery({
+    queryKey: [RECORDINGS_QUERY_KEYS.LIST, version],
+    queryFn: () => fetchRecordingsList(version),
+    staleTime: 10 * 1000, // Refresh every 10 seconds
+    refetchInterval: isClient ? 10 * 1000 : false, // Auto-refresh only on client
+    enabled: isClient, // Only run on client side
+  })
 }
 
 export function useRecording(sessionId: string | null) {
-  const [data, setData] = useState<Recording | null>(null)
-  const [isLoading, setIsLoading] = useState(false)
-  const [error, setError] = useState<Error | null>(null)
-
-  useEffect(() => {
-    if (!sessionId) {
-      setData(null)
-      return
-    }
-
-    const load = async () => {
-      setIsLoading(true)
-      try {
-        const recording = await fetchRecording(sessionId)
-        setData(recording)
-        setError(null)
-      } catch (err) {
-        setError(err as Error)
-      } finally {
-        setIsLoading(false)
-      }
-    }
-
-    load()
-  }, [sessionId])
-
-  return { data, isLoading, error }
+  return useQuery({
+    queryKey: [RECORDINGS_QUERY_KEYS.DETAIL, sessionId],
+    queryFn: () => fetchRecording(sessionId!),
+    enabled: isClient && !!sessionId, // Only run on client side when sessionId exists
+    staleTime: 60 * 1000, // 1 minute
+  })
 }
+
+export type { RecordingMetadata, Recording }
